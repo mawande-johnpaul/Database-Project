@@ -27,6 +27,8 @@ dependencies:
   path_provider: ^2.0.2
   hive: ^2.0.4 # A great alternative to shared_preferences for local data storage
   highlight: ^0.7.0
+  path: ^1.9.0  # file path utilities
+  crypto: ^3.0.3 #for password hashing
 
   # State Management
   get: ^4.6.6
