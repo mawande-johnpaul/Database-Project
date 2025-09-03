@@ -68,20 +68,20 @@ class _EditorState extends State<Editor> {
               ),
             ],
           ),
-          Container(
-            padding: EdgeInsets.all(10.0),
-            height: double.infinity,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20.0),
-            ),
-            child: CodeTheme(
-              data: CodeThemeData(styles: a11yDarkTheme),
-              child: CodeField(
-                controller: _controller,
-                textStyle: const TextStyle(
-                  fontFamily: 'monospace',
-                  fontSize: 14,
+          Expanded(
+            child: Container(
+              padding: EdgeInsets.all(10.0),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20.0),
+              ),
+              child: CodeTheme(
+                data: CodeThemeData(styles: a11yDarkTheme),
+                child: CodeField(
+                  controller: _controller,
+                  textStyle: const TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 14,
+                  ),
                 ),
               ),
             ),

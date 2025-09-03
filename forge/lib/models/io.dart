@@ -23,13 +23,11 @@ Future<Map<String, dynamic>> readJsonFromFile() async {
     final contents = await file.readAsString();
     return jsonDecode(contents);
   } catch (e) {
-    return {
-      'projects':[],
-    };
+    return {'projects': []};
   }
 }
 
-dynamic getProjects(Map<String, dynamic> appData){
+dynamic getProjects(Map<String, dynamic> appData) {
   return appData['projects'];
 }
 
