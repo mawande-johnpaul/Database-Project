@@ -1,5 +1,8 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:forge/models/datasheet.dart';
 import 'package:forge/models/io.dart';
 import 'package:forge/widgets/button.dart';
 import 'package:forge/widgets/sec_button.dart';
@@ -14,9 +17,111 @@ class ProjectsPage extends StatefulWidget {
 }
 
 class _ProjectsPageState extends State<ProjectsPage> {
+  Future<void> _showCreateProjectDialog() async {
+    final _formKey = GlobalKey<FormState>();
+    String projectName = '';
+    String projectDescription = '';
+
+    return showDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Create a new project'),
+          content: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                TextFormField(
+                  decoration: const InputDecoration(labelText: 'Project Name'),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter a project name';
+                    }
+                    return null;
+                  },
+                  onSaved: (value) {
+                    projectName = value!;
+                  },
+                ),
+                TextFormField(
+                  decoration: const InputDecoration(
+                    labelText: 'Project Description',
+                  ),
+                  onSaved: (value) {
+                    projectDescription = value!;
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: const Text('Create'),
+              onPressed: () async {
+                if (_formKey.currentState!.validate()) {
+                  _formKey.currentState!.save();
+
+                  String? selectedDirectory = await FilePicker.platform
+                      .getDirectoryPath();
+
+                  if (selectedDirectory != null) {
+                    final projectDir = Directory(
+                      '$selectedDirectory/$projectName',
+                    );
+                    await projectDir.create();
+
+                    final dbDir = Directory('${projectDir.path}/db');
+                    await dbDir.create();
+
+                    final forgeFile = File(
+                      '${projectDir.path}/$projectName.forge',
+                    );
+                    final projectData = {
+                      'name': projectName,
+                      'description': projectDescription,
+                      'createdAt': DateTime.now().toIso8601String(),
+                    };
+                    await forgeFile.writeAsString(jsonEncode(projectData));
+
+                    setState(() {
+                      widget.appData['projects'].add(projectData);
+                    });
+                    writeJsonToFile(widget.appData);
+
+                    Navigator.of(context).pop();
+                  }
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _openProject() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['forge'],
+    );
+
+    if (result != null) {
+      File file = File(result.files.single.path!);
+      final projectData = jsonDecode(await file.readAsString());
+
+      // TODO: Open the project
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Dummy list of saved projects for demonstration
     var savedProjects = getProjects(widget.appData);
 
     return Column(
@@ -29,34 +134,21 @@ class _ProjectsPageState extends State<ProjectsPage> {
               Button(
                 icon: Icons.add_rounded,
                 title: 'Create',
-                onPressed: () {
-                  var id, name, description, team;
-                  if (savedProjects.isNotEmpty()) {
-                    id = 1;
-                  } else {
-                    id = savedProjects.length() + 1;
-                  }
-                  Project(
-                    id: id,
-                    name: name,
-                    description: description,
-                    team: team,
-                    datasets: [],
-                    blueprints: [],
-                  );
-                },
+                onPressed: _showCreateProjectDialog,
               ),
               const SizedBox(width: 12),
               SecButton(
                 icon: Icons.folder_open,
                 title: 'Open',
-                onPressed: () {},
+                onPressed: _openProject,
               ),
               const SizedBox(width: 12),
               SecButton(
                 icon: Icons.group_add_rounded,
                 title: 'New team',
-                onPressed: () {},
+                onPressed: () {
+                  //TODO: Dialog for team options
+                },
               ),
             ],
           ),
@@ -75,8 +167,8 @@ class _ProjectsPageState extends State<ProjectsPage> {
                       ),
                       child: ListTile(
                         leading: const Icon(Icons.folder),
-                        title: Text((project.name).toString()),
-                        subtitle: Text((project.description).toString()),
+                        title: Text((project['name']).toString()),
+                        subtitle: Text((project['description']).toString()),
                         trailing: IconButton(
                           icon: const Icon(Icons.arrow_forward),
                           onPressed: () {
@@ -91,7 +183,7 @@ class _ProjectsPageState extends State<ProjectsPage> {
                   child: TrButton(
                     icon: Icons.add_rounded,
                     title: 'Create a new project here',
-                    onPressed: () {},
+                    onPressed: _showCreateProjectDialog,
                   ),
                 ),
         ),

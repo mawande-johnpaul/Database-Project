@@ -1,15 +1,39 @@
+import 'package:sqflite/sqflite.dart';
+
 class User {
   final int id;
   final String email;
   final String username;
   final String password;
+  final int teamId;
 
   User({
     required this.id,
     required this.email,
     required this.username,
     required this.password,
+    required this.teamId,
   });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'email': email,
+      'username': username,
+      'password': password,
+      'teamId': teamId,
+    };
+  }
+
+  factory User.fromMap(Map<String, dynamic> map) {
+    return User(
+      id: map['id'],
+      email: map['email'],
+      username: map['username'],
+      password: map['password'],
+      teamId: map['teamId'],
+    );
+  }
 }
 
 class Team {
@@ -18,6 +42,24 @@ class Team {
   final List<User> users;
 
   Team({required this.id, required this.name, required this.users});
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'users': users.map((user) => user.toMap()).toList(),
+    };
+  }
+
+  factory Team.fromMap(Map<String, dynamic> map) {
+    return Team(
+      id: map['id'],
+      name: map['name'],
+      users: (map['users'] as List)
+          .map((userMap) => User.fromMap(userMap))
+          .toList(),
+    );
+  }
 }
 
 class Dataset {
@@ -34,6 +76,26 @@ class Dataset {
     required this.type,
     required this.path,
   });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'description': description,
+      'type': type,
+      'path': path,
+    };
+  }
+
+  factory Dataset.fromMap(Map<String, dynamic> map) {
+    return Dataset(
+      id: map['id'],
+      name: map['name'],
+      description: map['description'],
+      type: map['type'],
+      path: map['path'],
+    );
+  }
 }
 
 class Algorithm {
@@ -42,6 +104,7 @@ class Algorithm {
   final String description;
   final List<dynamic> parameters;
   final String code;
+  final int projectId;
 
   Algorithm({
     required this.id,
@@ -49,21 +112,30 @@ class Algorithm {
     required this.description,
     required this.parameters,
     required this.code,
+    required this.projectId,
   });
-}
 
-class Blueprint {
-  final int id;
-  final String name;
-  final String type;
-  final List<Algorithm> algorithms;
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'description': description,
+      'parameters': parameters,
+      'code': code,
+      'projectId': projectId,
+    };
+  }
 
-  Blueprint({
-    required this.id,
-    required this.name,
-    required this.type,
-    required this.algorithms,
-  });
+  factory Algorithm.fromMap(Map<String, dynamic> map) {
+    return Algorithm(
+      id: map['id'],
+      name: map['name'],
+      description: map['description'],
+      parameters: List<dynamic>.from(map['parameters']),
+      code: map['code'],
+      projectId: map['projectId'],
+    );
+  }
 }
 
 class Project {
@@ -72,7 +144,6 @@ class Project {
   final String description;
   final Team team;
   final List<Dataset> datasets;
-  final List<Blueprint> blueprints;
 
   Project({
     required this.id,
@@ -80,6 +151,143 @@ class Project {
     required this.description,
     required this.team,
     required this.datasets,
-    required this.blueprints,
   });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'description': description,
+      'team': {
+        'id': team.id,
+        'name': team.name,
+        'users': team.users.map((user) => user.toMap()).toList(),
+      },
+      'datasets': datasets.map((dataset) => dataset.toMap()).toList(),
+    };
+  }
+
+  factory Project.fromMap(Map<String, dynamic> map) {
+    return Project(
+      id: map['id'],
+      name: map['name'],
+      description: map['description'],
+      team: Team(
+        id: map['team']['id'],
+        name: map['team']['name'],
+        users: (map['team']['users'] as List)
+            .map((userMap) => User.fromMap(userMap))
+            .toList(),
+      ),
+      datasets: (map['datasets'] as List)
+          .map((datasetMap) => Dataset.fromMap(datasetMap))
+          .toList(),
+    );
+  }
 }
+
+class Log {
+  final int id;
+  final DateTime timestamp;
+  final int lineNumber;
+  final String status;
+  final int result;
+  final Project projectId;
+
+  Log({
+    required this.id,
+    required this.lineNumber,
+    required this.timestamp,
+    required this.status,
+    required this.result,
+    required this.projectId,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'timestamp': timestamp.toIso8601String(),
+      'lineNumber': lineNumber,
+      'status': status,
+      'result': result,
+      'projectId': projectId.id,
+    };
+  }
+
+  factory Log.fromMap(Map<String, dynamic> map) {
+    return Log(
+      id: map['id'],
+      timestamp: DateTime.parse(map['timestamp']),
+      lineNumber: map['lineNumber'],
+      status: map['status'],
+      result: map['result'],
+      projectId: Project.fromMap(map['projectId']),
+    );
+  }
+}
+
+Future onCreate (Database db, int version) async {
+  await db.execute('''
+    CREATE TABLE users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      email TEXT NOT NULL,
+      username TEXT NOT NULL,
+      password TEXT NOT NULL,
+      teamId INTEGER,
+      FOREIGN KEY (teamId) REFERENCES teams (id)
+    )
+  ''');
+
+  await db.execute('''
+    CREATE TABLE teams (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL
+    )
+  ''');
+
+  await db.execute('''
+    CREATE TABLE datasets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      description TEXT,
+      type TEXT NOT NULL,
+      path TEXT NOT NULL
+    )
+  ''');
+
+  await db.execute('''
+    CREATE TABLE projects (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      description TEXT,
+      teamId INTEGER,
+      FOREIGN KEY (teamId) REFERENCES teams (id)
+    )
+  ''');
+
+  await db.execute('''
+    CREATE TABLE algorithms (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      description TEXT,
+      parameters TEXT,
+      code TEXT NOT NULL,
+      projectId INTEGER,
+      FOREIGN KEY (projectId) REFERENCES projects (id)
+    )
+  ''');
+
+  await db.execute('''
+    CREATE TABLE logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      timestamp TEXT NOT NULL,
+      lineNumber INTEGER NOT NULL,
+      status TEXT NOT NULL,
+      result INTEGER NOT NULL,
+      projectId INTEGER,
+      FOREIGN KEY (projectId) REFERENCES projects (id)
+    )
+  ''');
+}
+
+

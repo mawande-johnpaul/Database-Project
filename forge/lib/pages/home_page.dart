@@ -79,7 +79,9 @@ class _MyHomePageState extends State<MyHomePage> {
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(0, 10, 10, 10),
-                  child: Container(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut, // smoother animation
                     decoration: BoxDecoration(
                       color: const Color.fromARGB(255, 31, 31, 31),
                       borderRadius: BorderRadius.circular(15.0),

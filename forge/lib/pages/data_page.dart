@@ -8,7 +8,7 @@ class DataPage extends StatefulWidget {
 }
 
 class _DataPageState extends State<DataPage> {
-  // Dummy variable to represent if a project is open
+  //TODO: Add proper project data
   final bool hasProject = true; // Set to true to simulate open project
   final Map<String, dynamic> projectData = const {
     'name': 'Project Alpha',
@@ -59,6 +59,8 @@ class _DataPageState extends State<DataPage> {
               ],
             ),
           ),
+          //TODO: Add more project data visualizations
+          //TODO: Button to import data
         ],
       ),
     );
