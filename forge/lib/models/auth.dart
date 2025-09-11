@@ -1,8 +1,6 @@
-import 'dart:convert';
-import 'dart:math';
+import 'package:bcrypt/bcrypt.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-import 'package:crypto/crypto.dart';
 
 class AuthService {
   static Database? _db;
@@ -19,37 +17,21 @@ class AuthService {
       version: 1,
       onCreate: (db, version) async {
         await db.execute('''
-          CREATE TABLE users (
+          CREATE TABLE users(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             email TEXT UNIQUE,
             username TEXT UNIQUE,
-            password TEXT,
-            salt TEXT
+            password TEXT
           )
         ''');
       },
     );
   }
 
-  /// Generate a random salt
-  static String _generateSalt([int length = 16]) {
-    final rand = Random.secure();
-    final values = List<int>.generate(length, (_) => rand.nextInt(256));
-    return base64Url.encode(values);
-  }
-
-  /// Hash password with SHA-256 + salt
-  static String _hashPassword(String password, String salt) {
-    final bytes = utf8.encode(password + salt);
-    final digest = sha256.convert(bytes);
-    return digest.toString();
-  }
-
   /// Register new User
   static Future<int> registerUser(String email, String username, String password) async {
     await initDb();
-    final salt = _generateSalt();
-    final hashedPassword = _hashPassword(password, salt);
+    final hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt());
 
     try {
       return await _db!.insert(
@@ -58,7 +40,6 @@ class AuthService {
           'email': email,
           'username': username,
           'password': hashedPassword,
-          'salt': salt,
         },
         conflictAlgorithm: ConflictAlgorithm.fail,
       );
@@ -79,10 +60,9 @@ class AuthService {
 
     if (result.isNotEmpty) {
       final user = result.first;
-      final salt = user['salt'] as String;
-      final hashedPassword = _hashPassword(password, salt);
+      final hashedPassword = user['password'] as String;
 
-      if (hashedPassword == user['password']) {
+      if (BCrypt.checkpw(password, hashedPassword)) {
         return user;
       }
     }
@@ -102,14 +82,12 @@ class AuthService {
   /// Update user password
   static Future<int> updatePassword(int id, String newPassword) async {
     await initDb();
-    final newSalt = _generateSalt();
-    final hashedPassword = _hashPassword(newPassword, newSalt);
+    final hashedPassword = BCrypt.hashpw(newPassword, BCrypt.gensalt());
 
     return await _db!.update(
       'users',
       {
         'password': hashedPassword,
-        'salt': newSalt,
       },
       where: 'id = ?',
       whereArgs: [id],
