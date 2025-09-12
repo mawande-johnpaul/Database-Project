@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 class Button extends StatelessWidget {
   const Button({
     super.key,
-
     required this.icon,
     required this.title,
     required this.onPressed,
@@ -15,23 +14,21 @@ class Button extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        padding: EdgeInsets.all(5.0),
-        decoration: BoxDecoration(
+    return ElevatedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon),
+      label: Text(
+        title,
+        style: TextStyle(fontWeight: FontWeight.bold), // Consider theme for color
+      ),
+      style: ElevatedButton.styleFrom(
+        // You can customize the button's appearance here
+        backgroundColor: Theme.of(context).primaryColor, // Background color
+        foregroundColor: Colors.black, // Text and icon color
+        shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
-          color: Theme.of(context).primaryColor,
-          border: Border.all(color: Theme.of(context).primaryColor, width: 2.0)
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon),
-            SizedBox(width: 5.0),
-            Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
-          ],
-        ),
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12), // More generous padding
       ),
     );
   }

@@ -31,3 +31,7 @@ dynamic getProjects(Map<String, dynamic> appData) {
   return appData['projects'];
 }
 
+Future<List<String>> getDataset(String path) async {
+  return File(path).readAsLines();
+}
+

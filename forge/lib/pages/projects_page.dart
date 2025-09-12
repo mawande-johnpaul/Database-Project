@@ -1,9 +1,13 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:forge/models/datasheet.dart';
 import 'package:forge/models/io.dart';
+import 'package:forge/pages/data_page.dart';
 import 'package:forge/widgets/button.dart';
 import 'package:forge/widgets/sec_button.dart';
 import 'package:forge/widgets/tr_button.dart';
+import 'dart:convert';
+import 'package:path_provider/path_provider.dart';
 
 class ProjectsPage extends StatefulWidget {
   const ProjectsPage({super.key, required this.appData});
@@ -30,20 +34,16 @@ class _ProjectsPageState extends State<ProjectsPage> {
                 icon: Icons.add_rounded,
                 title: 'Create',
                 onPressed: () {
-                  var id, name, description, team;
-                  if (savedProjects.isNotEmpty()) {
-                    id = 1;
-                  } else {
-                    id = savedProjects.length() + 1;
-                  }
-                  Project(
-                    id: id,
-                    name: name,
-                    description: description,
-                    team: team,
-                    datasets: [],
-                    blueprints: [],
+                  var newProject = Project(
+                    id: DateTime.now().millisecondsSinceEpoch,
+                    name: 'New Project',
+                    description: 'A newly created project',
+                    teamId: 1, // Default team ID
                   );
+                  setState(() {
+                    savedProjects.add(newProject);
+                  });
+                  writeJsonToFile(widget.appData);
                 },
               ),
               const SizedBox(width: 12),
@@ -65,6 +65,7 @@ class _ProjectsPageState extends State<ProjectsPage> {
         Expanded(
           child: savedProjects.isNotEmpty
               ? ListView.builder(
+                  //PROJECT CARDS
                   itemCount: savedProjects.length,
                   itemBuilder: (context, index) {
                     final project = savedProjects[index];
@@ -73,15 +74,77 @@ class _ProjectsPageState extends State<ProjectsPage> {
                         horizontal: 16,
                         vertical: 8,
                       ),
-                      child: ListTile(
-                        leading: const Icon(Icons.folder),
-                        title: Text((project.name).toString()),
-                        subtitle: Text((project.description).toString()),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.arrow_forward),
-                          onPressed: () {
-                            // TODO: Open this project
-                          },
+                      elevation: 2,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(color: Colors.black, width: 1),
+                      ),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () {
+                          // TODO: Open this project
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                project.name.toString(),
+                                style: Theme.of(context).textTheme.titleLarge
+                                    ?.copyWith(fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                project.description.toString(),
+                                style: Theme.of(context).textTheme.bodyMedium,
+                              ),
+                              const SizedBox(height: 16),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  Button(
+                                    icon: Icons.open_in_new_rounded,
+                                    title: 'Open dataset',
+                                    onPressed: () async {
+                                      FilePickerResult? result =
+                                          await FilePicker.platform.pickFiles(
+                                            type: FileType.custom,
+                                            allowedExtensions: ['csv'],
+                                          );
+
+                                      if (result != null) {
+                                        // A file was selected.
+                                        PlatformFile file = result.files.first;
+
+                                        var dataset = Dataset(
+                                          id: 1,
+                                          name: file.name,
+                                          description:
+                                              "Olive oils and their fluorescence",
+                                          type: "csv",
+                                          path: file.path,
+                                          projectId: project,
+                                        );
+
+                                        var datasetFile = getDataset(
+                                          file.path!,
+                                        );
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) {
+                                              return DataPage(dataset: dataset, dataFile: datasetFile,);
+                                            },
+                                          ),
+                                        );
+                                      } else {}
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     );

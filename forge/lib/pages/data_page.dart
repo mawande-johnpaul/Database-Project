@@ -1,29 +1,39 @@
 import 'package:flutter/material.dart';
+import 'package:forge/models/datasheet.dart';
+import 'package:forge/widgets/button.dart';
 
 class DataPage extends StatefulWidget {
-  const DataPage({super.key});
+  final Dataset dataset = null;
+  const Future<List<String>> dataFile = null;
+  const DataPage({super.key, this.dataset, this.dataFile});
 
   @override
   State<DataPage> createState() => _DataPageState();
 }
 
 class _DataPageState extends State<DataPage> {
-  // Dummy variable to represent if a project is open
-  final bool hasProject = true; // Set to true to simulate open project
-  final Map<String, dynamic> projectData = const {
-    'name': 'Project Alpha',
-    'description': 'A sample project',
-    'created': '2025-08-29',
-    'status': 'Active',
-  };
-
   @override
   Widget build(BuildContext context) {
-    if (!hasProject) {
+    var dataset = widget.dataset;
+    var dataFile = widget.dataFile;
+
+    if (dataFile == null || dataset == null) {
       return Center(
-        child: Text(
-          'No project opened. Please open or create a project to view data.',
-          style: Theme.of(context).textTheme.titleMedium,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'No dataset opened. Please open one',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            Button(
+              icon: Icons.open_in_new_rounded,
+              title: 'Open dataset',
+              onPressed: () {
+                // Open window to select dataset file
+              },
+            ),
+          ],
         ),
       );
     }
@@ -41,19 +51,11 @@ class _DataPageState extends State<DataPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  'Project: \\${projectData['name']}',
+                  'Project: \\${dataset.name}',
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 Text(
-                  'Description: \\${projectData['description']}',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                Text(
-                  'Created: \\${projectData['created']}',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                Text(
-                  'Status: \\${projectData['status']}',
+                  'Description: \\${dataset.description}',
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
               ],

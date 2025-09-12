@@ -21,8 +21,7 @@ class SecButton extends StatelessWidget {
         padding: EdgeInsets.all(5.0),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),
-          color: Colors.transparent,
-          border: Border.all(color: Colors.white54, width: 2.0)
+          color: Colors.white10,
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
