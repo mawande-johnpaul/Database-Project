@@ -3,9 +3,9 @@ import 'package:forge/models/datasheet.dart';
 import 'package:forge/widgets/button.dart';
 
 class DataPage extends StatefulWidget {
-  final Dataset dataset = null;
-  const Future<List<String>> dataFile = null;
-  const DataPage({super.key, this.dataset, this.dataFile});
+  Dataset? dataset;
+  Future<List<String>>? dataFile;
+  DataPage({super.key, this.dataset, this.dataFile});
 
   @override
   State<DataPage> createState() => _DataPageState();

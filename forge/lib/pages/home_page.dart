@@ -24,7 +24,7 @@ class _MyHomePageState extends State<MyHomePage> {
     // No need to initialize the future here anymore.
   }
 
-  void _onMenuItemTapped(int index) {
+  void onMenuItemTapped(int index) {
     setState(() {
       selected = index;
     });
@@ -76,18 +76,9 @@ class _MyHomePageState extends State<MyHomePage> {
                       inactiveTextColor,
                     ),
                     _buildMenuItem(
-                      Icons.dataset_rounded,
-                      'Data',
-                      1,
-                      activeColor,
-                      inactiveColor,
-                      activeTextColor,
-                      inactiveTextColor,
-                    ),
-                    _buildMenuItem(
                       Icons.code_rounded,
                       'Editor',
-                      2,
+                      1,
                       activeColor,
                       inactiveColor,
                       activeTextColor,
@@ -96,16 +87,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     _buildMenuItem(
                       Icons.analytics_rounded,
                       'Analytics',
-                      3,
-                      activeColor,
-                      inactiveColor,
-                      activeTextColor,
-                      inactiveTextColor,
-                    ),
-                    _buildMenuItem(
-                      Icons.now_widgets_rounded,
-                      'Blueprint',
-                      4,
+                      2,
                       activeColor,
                       inactiveColor,
                       activeTextColor,
@@ -115,7 +97,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     _buildMenuItem(
                       Icons.group_rounded,
                       'Team',
-                      5,
+                      3,
                       activeColor,
                       inactiveColor,
                       activeTextColor,
@@ -124,7 +106,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     _buildMenuItem(
                       Icons.settings_rounded,
                       'Settings',
-                      6,
+                      4,
                       activeColor,
                       inactiveColor,
                       activeTextColor,
@@ -166,9 +148,11 @@ class _MyHomePageState extends State<MyHomePage> {
   ) {
     final bool isCurrent = selected == index;
     return GestureDetector(
-      onTap: () => _onMenuItemTapped(index),
+      onTap: () => onMenuItemTapped(index),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200), // Duration of the animation
+        duration: const Duration(
+          milliseconds: 200,
+        ), // Duration of the animation
         padding: const EdgeInsets.all(10.0),
         decoration: BoxDecoration(
           color: isCurrent ? activeColor : inactiveColor,

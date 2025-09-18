@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:forge/pages/analytics_page.dart';
-import 'package:forge/pages/data_page.dart';
 import 'package:forge/pages/editor_page.dart';
 import 'package:forge/pages/projects_page.dart';
 
@@ -21,15 +20,13 @@ class _MaintabState extends State<Maintab> {
     if (widget.appData == null) {
       return const Center(child: Text('Loading...'));
     }
-    
+
     return IndexedStack(
       index: widget.selected,
       children: [
-        ProjectsPage(appData: widget.appData,),
-        DataPage(),
-        Editor(initialCode: '# Your code here',),
+        ProjectsPage(appData: widget.appData, selected: widget.selected),
+        Editor(initialCode: '# Your code here'),
         AnalyticsPage(),
-        const Center(child: Text('Blueprints Content')),
         const Center(child: Text('Team Content')),
         const Center(child: Text('Settings Content')),
       ],
