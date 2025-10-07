@@ -7,6 +7,5 @@ List<double> removeOutliers(List<double> data) {
   double lowerBound = q1 - 1.5 * iqr;
   double upperBound = q3 + 1.5 * iqr;
 
-
   return data.where((x) => x >= lowersBound && x <= upperBound).toList();
 }
