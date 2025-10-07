@@ -1,5 +1,6 @@
 List<double> removeOutliers(List<double> data) {
   data.sort();
+  
   int n = data.length;
   double q1 = data[(n / 4).floor()];
   double q3 = data[(3 * n / 4).floor()];
