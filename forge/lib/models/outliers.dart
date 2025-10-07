@@ -4,7 +4,7 @@ List<double> removeOutliers(List<double> data) {
   double q1 = data[(n / 4).floor()];
   double q3 = data[(3 * n / 4).floor()];
   double iqr = q3 - q1;
-  double leastbound = q1 - 1.5 * iqr;
+  double lowerBound = q1 - 1.5 * iqr;
   double upperBound = q3 + 1.5 * iqr;
 
 
