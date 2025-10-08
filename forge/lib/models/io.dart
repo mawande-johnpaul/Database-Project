@@ -1,33 +1,25 @@
-import 'dart:convert';
 import 'dart:io';
-import 'package:path_provider/path_provider.dart';
 
-Future<String> get _localPath async {
-  final directory = await getApplicationDocumentsDirectory();
-  return directory.path;
+import 'package:forge/models/datasheet.dart';
+
+import 'sqflite_service.dart';
+
+// Use Sqflite for all data operations
+Future<List<Map<String, dynamic>>> getProjects() async {
+  return await SqfliteService.getProjects();
 }
 
-Future<File> _getLocalFile() async {
-  final path = await _localPath;
-  return File('$path/appfile.json');
+Future<Project?> getProject(int id) async {
+  return await SqfliteService.getProject(id);
 }
 
-Future<void> writeJsonToFile(Map<String, dynamic> data) async {
-  final file = await _getLocalFile();
-  await file.writeAsString(jsonEncode(data));
+Future<void> createProject(Project project) async {
+  await SqfliteService.createProject(project);
 }
 
-Future<Map<String, dynamic>> readJsonFromFile() async {
-  try {
-    final file = await _getLocalFile();
-    final contents = await file.readAsString();
-    return jsonDecode(contents);
-  } catch (e) {
-    return {'projects': []};
-  }
-}
+// Add similar wrappers for users, datasheets, etc.
 
-dynamic getProjects(Map<String, dynamic> appData) {
-  return appData['projects'];
+Future<List<String>> getDataset(String path) async {
+  return File(path).readAsLines();
 }
 

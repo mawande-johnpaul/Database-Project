@@ -1,68 +1,26 @@
 class User {
   final int id;
-  final String email;
   final String username;
+  final String email;
   final String password;
+  final int teamId;
 
   User({
     required this.id,
-    required this.email,
     required this.username,
+    required this.email,
     required this.password,
+    required this.teamId,
   });
 }
 
 class Team {
   final int id;
   final String name;
-  final List<User> users;
 
-  Team({required this.id, required this.name, required this.users});
-}
-
-class Dataset {
-  final int id;
-  final String name;
-  final String description;
-  final String type;
-  final String path;
-
-  Dataset({
+  Team({
     required this.id,
     required this.name,
-    required this.description,
-    required this.type,
-    required this.path,
-  });
-}
-
-class Algorithm {
-  final int id;
-  final String name;
-  final String description;
-  final List<dynamic> parameters;
-  final String code;
-
-  Algorithm({
-    required this.id,
-    required this.name,
-    required this.description,
-    required this.parameters,
-    required this.code,
-  });
-}
-
-class Blueprint {
-  final int id;
-  final String name;
-  final String type;
-  final List<Algorithm> algorithms;
-
-  Blueprint({
-    required this.id,
-    required this.name,
-    required this.type,
-    required this.algorithms,
   });
 }
 
@@ -70,16 +28,62 @@ class Project {
   final int id;
   final String name;
   final String description;
-  final Team team;
-  final List<Dataset> datasets;
-  final List<Blueprint> blueprints;
+  final int teamId;
 
   Project({
     required this.id,
     required this.name,
     required this.description,
-    required this.team,
-    required this.datasets,
-    required this.blueprints,
+    required this.teamId,
+  });
+}
+
+class Dataset {
+  final int id;
+  final String name;
+  final String description;
+  final String type;
+  final String? path;
+  final int projectId;
+
+  Dataset({
+    required this.id,
+    required this.name,
+    required this.description,
+    required this.type,
+    required this.path,
+    required this.projectId,
+  });
+}
+
+class Blueprint {
+  final int id;
+  final String name;
+  final String type;
+  final int projectId;
+
+  Blueprint({
+    required this.id,
+    required this.name,
+    required this.type,
+    required this.projectId,
+  });
+}
+
+class Algorithm {
+  final int id;
+  final String name;
+  final String description;
+  final String code;
+  final String parameters; // Store as a JSON string or comma-separated values for sqflite
+  final int blueprintId;
+
+  Algorithm({
+    required this.id,
+    required this.name,
+    required this.description,
+    required this.code,
+    required this.parameters,
+    required this.blueprintId,
   });
 }
