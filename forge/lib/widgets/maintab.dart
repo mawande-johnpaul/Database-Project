@@ -7,7 +7,7 @@ class Maintab extends StatefulWidget {
   Maintab({super.key, required this.selected, required this.appData});
 
   final int selected;
-  late Map<String, dynamic> appData;
+  late dynamic appData;
 
   @override
   State<Maintab> createState() => _MaintabState();

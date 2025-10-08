@@ -15,13 +15,14 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   // Use a late final Future to ensure it's initialized once.
   // This is a common and correct pattern for handling futures in initState.
-  final Future<Map<String, dynamic>> startup = readJsonFromFile();
+  late Future<dynamic> startup;
   int selected = 0;
 
   @override
   void initState() {
     super.initState();
     // No need to initialize the future here anymore.
+    startup = getProjects();
   }
 
   void onMenuItemTapped(int index) {
@@ -52,7 +53,7 @@ class _MyHomePageState extends State<MyHomePage> {
         if (snapshot.data == null) {
           return const Center(child: Text('No data found.'));
         }
-        final appData = snapshot.data ?? <String, dynamic>{};
+        final appData = snapshot.data;
 
         return Scaffold(
           body: Row(
