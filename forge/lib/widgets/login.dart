@@ -7,8 +7,6 @@ class LoginPopup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
 
-    var users = getAllUsers()
-
     return Container(
       
     );

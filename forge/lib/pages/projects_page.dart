@@ -55,6 +55,8 @@ class _ProjectsPageState extends State<ProjectsPage> {
                 icon: Icons.add_rounded,
                 title: "Create project",
                 onPressed: () {
+                  //open a file manager window to select a csv file
+                  
                   var newProject = Project(
                     id: DateTime.now().millisecondsSinceEpoch,
                     name: 'New Project',
