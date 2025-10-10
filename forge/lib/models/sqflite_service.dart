@@ -28,66 +28,72 @@ class SqfliteService {
     // Ensure foreign keys and tables exist (handles existing DBs that may be missing tables)
     await db.execute('PRAGMA foreign_keys = ON');
 
-    // Users
+
+    // Users table -added NOT NULL ,UNIQUE, and FOREIGN KEY constraints
     await db.execute('''
       CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT,
-        email TEXT,
-        password TEXT,
-        team_id INTEGER
+        username TEXT NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        team_id INTEGER,
+        FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE SET NULL
       )
     ''');
 
-    // Teams
+    // Teams table -added NOT NULL +unique constraints
     await db.execute('''
       CREATE TABLE IF NOT EXISTS teams (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT
+        name TEXT NOT NULL UNIQUE
       )
     ''');
 
-    // Projects
+    //UPDATED- Projects table - Linked to Teams table
     await db.execute('''
       CREATE TABLE IF NOT EXISTS projects (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT,
+        name TEXT NOT NULL,
         description TEXT,
-        team_id INTEGER
+        team_id INTEGER NOT NULL,
+        FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE
       )
     ''');
 
-    // Datasets
+    //UPDATED- Datasets table -added foreign key and NOT NULL constraints
     await db.execute('''
       CREATE TABLE IF NOT EXISTS datasets (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT,
+        name TEXT NOT NULL,
         description TEXT,
         type TEXT,
         path TEXT,
-        project_id INTEGER
+        project_id INTEGER NOT NULL,
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
       )
     ''');
 
-    // Blueprints
+    // UPDATED: Blueprints table - added foreign key constraint
     await db.execute('''
       CREATE TABLE IF NOT EXISTS blueprints (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT,
+        name TEXT NOT NULL,
         type TEXT,
-        project_id INTEGER
+        project_id INTEGER NOT NULL,
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
       )
     ''');
 
-    // Algorithms
+    //UPDATED: Algorithms table - added foreign key and NOT NULL fields
     await db.execute('''
       CREATE TABLE IF NOT EXISTS algorithms (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT,
+        name TEXT NOT NULL,
         description TEXT,
         code TEXT,
         parameters TEXT,
-        blueprint_id INTEGER
+        blueprint_id INTEGER NOT NULL,
+        FOREIGN KEY (blueprint_id) REFERENCES blueprints(id) ON DELETE CASCADE
       )
     ''');
 
@@ -362,5 +368,49 @@ class SqfliteService {
   static Future<void> deleteAlgorithm(int id) async {
     final db = await connect();
     await db.delete('algorithms', where: 'id = ?', whereArgs: [id]);
+  }
+
+
+ // Get all projects with their team names
+  static Future<List<Map<String, dynamic>>> getProjectsWithTeams() async {
+    final db = await connect();
+    return await db.rawQuery('''
+      SELECT projects.name AS project_name, teams.name AS team_name
+      FROM projects
+      INNER JOIN teams ON projects.team_id = teams.id
+    ''');
+  }
+
+  // Get all datasets for a given project
+  static Future<List<Map<String, dynamic>>> getDatasetsForProject(int projectId) async {
+    final db = await connect();
+    return await db.rawQuery('''
+      SELECT name, description, type, path
+      FROM datasets
+      WHERE project_id = ?
+    ''', [projectId]);
+  }
+
+  // Count total number of users
+  static Future<int> getUserCount() async {
+    final db = await connect();
+    var result = await db.rawQuery('SELECT COUNT(*) AS total FROM users');
+    return Sqflite.firstIntValue(result) ?? 0;
+  }
+
+  // Delete all projects for a specific team (demonstrates DELETE query)
+  static Future<void> deleteProjectsByTeam(int teamId) async {
+    final db = await connect();
+    await db.rawDelete('DELETE FROM projects WHERE team_id = ?', [teamId]);
+  }
+
+  // Get all algorithms linked to a specific blueprint
+  static Future<List<Map<String, dynamic>>> getAlgorithmsByBlueprint(int blueprintId) async {
+    final db = await connect();
+    return await db.rawQuery('''
+      SELECT name, description, parameters
+      FROM algorithms
+      WHERE blueprint_id = ?
+    ''', [blueprintId]);
   }
 }
