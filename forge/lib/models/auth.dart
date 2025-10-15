@@ -29,27 +29,30 @@ class AuthService {
   }
 
   /// Register new User
-  static Future<int> registerUser(String email, String username, String password) async {
+  static Future<int> registerUser(
+    String email,
+    String username,
+    String password,
+  ) async {
     await initDb();
     final hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt());
 
     try {
-      return await _db!.insert(
-        'users',
-        {
-          'email': email,
-          'username': username,
-          'password': hashedPassword,
-        },
-        conflictAlgorithm: ConflictAlgorithm.fail,
-      );
+      return await _db!.insert('users', {
+        'email': email,
+        'username': username,
+        'password': hashedPassword,
+      }, conflictAlgorithm: ConflictAlgorithm.fail);
     } catch (e) {
       throw Exception("User already exists or DB error: $e");
     }
   }
 
   /// Login user by email or username
-  static Future<Map<String, dynamic>?> loginUser(String identifier, String password) async {
+  static Future<Map<String, dynamic>?> loginUser(
+    String identifier,
+    String password,
+  ) async {
     await initDb();
 
     final result = await _db!.query(
@@ -72,11 +75,7 @@ class AuthService {
   /// Delete user by ID
   static Future<int> deleteUser(int id) async {
     await initDb();
-    return await _db!.delete(
-      'users',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    return await _db!.delete('users', where: 'id = ?', whereArgs: [id]);
   }
 
   /// Update user password
@@ -86,9 +85,7 @@ class AuthService {
 
     return await _db!.update(
       'users',
-      {
-        'password': hashedPassword,
-      },
+      {'password': hashedPassword},
       where: 'id = ?',
       whereArgs: [id],
     );
@@ -101,7 +98,9 @@ class AuthService {
   }
 
   /// Get a user by email or username
-  static Future<Map<String, dynamic>?> getUserByIdentifier(String identifier) async {
+  static Future<Map<String, dynamic>?> getUserByIdentifier(
+    String identifier,
+  ) async {
     await initDb();
     final result = await _db!.query(
       'users',

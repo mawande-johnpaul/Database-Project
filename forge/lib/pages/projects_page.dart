@@ -2,12 +2,13 @@
 
 import 'package:flutter/material.dart';
 import 'package:forge/models/datasheet.dart';
+import 'package:forge/models/file_picker_service.dart';
 import 'package:forge/models/io.dart';
 import 'package:forge/pages/data_page.dart';
 import 'package:forge/widgets/button.dart';
 import 'package:forge/widgets/sec_button.dart';
 // import 'package:get/utils.dart';
-// import 'package:file_picker/file_picker.dart';
+import 'package:file_picker/file_picker.dart';
 
 class ProjectsPage extends StatefulWidget {
   ProjectsPage({super.key, required this.appData, required this.selected});
@@ -30,15 +31,12 @@ class _ProjectsPageState extends State<ProjectsPage> {
                 id: item['id'],
                 name: item['name'],
                 description: item['description'],
-                teamId: item['team_id'],
               ),
             )
             .toList();
       }),
       builder: (context, snapshot) {
         List<Project> savedProjects = snapshot.data!;
-
-        var isOpen = false;
         DataPage page = DataPage(dataset: null, dataFile: null);
 
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -56,145 +54,211 @@ class _ProjectsPageState extends State<ProjectsPage> {
                 title: "Create project",
                 onPressed: () {
                   //open a file manager window to select a csv file
-                  
-                  var newProject = Project(
-                    id: DateTime.now().millisecondsSinceEpoch,
-                    name: 'New Project',
-                    description: 'A newly created project',
-                    teamId: 1, // Default team ID
-                  );
-                  setState(() {
-                    savedProjects.add(newProject);
-                  });
+                  try {
+                    // Get file path and load dataset
+                    final fileFuture = FilePickerService.pickFile(
+                      allowMultiple: false,
+                      allowedExtensions: ['csv'],
+                    );
+                    getDataset(fileFuture).then((dataset) {
+                      if (dataset.isNotEmpty) {
+                        // Create new project with the dataset
+                        var newProject = Project(
+                          id: DateTime.now().millisecondsSinceEpoch,
+                          name: 'New Project',
+                          description: 'A newly created project',
+                        );
 
-                  isOpen = true;
+                        // Save the project and update UI
+                        createProject(newProject).then((_) {
+                          setState(() {
+                            // This will trigger a rebuild and fetch projects again
+                          });
+                        });
+                      }
+                    });
+                  } catch (e) {
+                    debugPrint('Error importing CSV: $e');
+                  }
                 },
               ),
             ],
           );
         }
-
         return Column(
           children: [
             Container(
               padding: const EdgeInsets.all(16.0),
-              child: !isOpen
-                  ? Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Button(
-                          icon: Icons.add_rounded,
-                          title: 'Create',
-                          onPressed: () {
-                            var newProject = Project(
-                              id: DateTime.now().millisecondsSinceEpoch,
-                              name: 'New Project',
-                              description: 'A newly created project',
-                              teamId: 1, // Default team ID
-                            );
-                            setState(() {
-                              savedProjects.add(newProject);
-                            });
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Button(
+                    icon: Icons.add_rounded,
+                    title: 'Create',
+                    onPressed: () async {
+                      // Open file picker to select a CSV file
+                      final filePath = await FilePickerService.pickFile(
+                        allowMultiple: false,
+                        allowedExtensions: ['csv'],
+                      );
 
-                            isOpen = true;
-                          },
-                        ),
-                        const SizedBox(width: 12),
-                        SecButton(
-                          icon: Icons.folder_open,
-                          title: 'Open',
-                          onPressed: () {
-                            isOpen = true;
-                          },
-                        ),
-                      ],
-                    )
-                  : Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        IconButton(
-                          onPressed: () {
-                            //TODO: Empty cells
-                          },
-                          icon: Icon(Icons.cancel_presentation_outlined),
-                        ),
-                        IconButton(
-                          onPressed: () {
-                            //TODO: Outliers
-                          },
-                          icon: Icon(Icons.outlined_flag_rounded),
-                        ),
-                        IconButton(
-                          onPressed: () {
-                            //TODO: case lowering
-                          },
-                          icon: Icon(Icons.abc_rounded),
-                        ),
-                        IconButton(
-                          onPressed: () {
-                            //TODO: Empty cells
-                          },
-                          icon: Icon(Icons.cancel_presentation_outlined),
-                        ),
-                      ],
-                    ),
+                      if (filePath != null) {
+                        try {
+                          // Create a new project with the imported CSV data
+                          var newProject = Project(
+                            id: DateTime.now().millisecondsSinceEpoch,
+                            name: 'Project from CSV',
+                            description: 'Imported from CSV file',
+                          );
+
+                          // Save the project to the database
+                          await createProject(newProject);
+
+                          // Create a dataset linked to this project
+                          var dataset = Dataset(
+                            id: DateTime.now().millisecondsSinceEpoch + 1,
+                            name: 'Dataset from CSV',
+                            description:
+                                'Imported from ${filePath.split('\\').last}',
+                            type: 'csv',
+                            path: filePath,
+                            projectId: newProject.id,
+                          );
+
+                          // Save the dataset with the file path
+                          await createDataset(dataset, filePath);
+
+                          // Refresh the state to show the new project
+                          setState(() {
+                            // This will trigger a rebuild and fetch projects again
+                          });
+                        } catch (e) {
+                          debugPrint('Error importing CSV: $e');
+                          // Show error message if needed
+                        }
+                      }
+                    },
+                  ),
+                  const SizedBox(width: 12),
+                  SecButton(
+                    icon: Icons.folder_open,
+                    title: 'Open',
+                    onPressed: () {},
+                  ),
+                ],
+              ),
             ),
             Expanded(
-              child: savedProjects.isEmpty && !isOpen
+              child: savedProjects.isNotEmpty
                   ? ListView.builder(
                       //PROJECT CARDS
                       itemCount: savedProjects.length,
                       itemBuilder: (context, index) {
                         final project = savedProjects[index];
-                        return GestureDetector(
-                          onTap: () {
-                            widget.selected = 1;
-                          },
-                          child: Card(
-                            margin: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            elevation: 2,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              side: BorderSide(color: Colors.black, width: 1),
-                            ),
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(12),
-                              onTap: () {
-                                // TODO: Open this project
-                              },
-                              child: Padding(
-                                padding: const EdgeInsets.all(16.0),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      project.name.toString(),
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleLarge
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.bold,
-                                          ),
+                        return Card(
+                          margin: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(color: Colors.black, width: 1),
+                          ),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: () async {
+                              // Set selected tab to data tab
+                              widget.selected = 1;
+
+                              try {
+                                // Get datasets linked to this project
+                                final datasets = await getDatasetsByProject(
+                                  project.id,
+                                );
+
+                                if (datasets.isNotEmpty) {
+                                  // Use the first dataset found
+                                  final dataset = datasets.first;
+
+                                  // Navigate to data page with the dataset and its file path
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (context) => DataPage(
+                                        dataset: dataset,
+                                        dataFile: dataset.path != null
+                                            ? getDataset(
+                                                Future.value(dataset.path),
+                                              )
+                                            : null,
+                                      ),
                                     ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      project.description.toString(),
-                                      style: Theme.of(
-                                        context,
-                                      ).textTheme.bodyMedium,
+                                  );
+                                } else {
+                                  // If no datasets found, create a basic dataset from project
+                                  final dataset = Dataset(
+                                    id: project.id,
+                                    name: project.name,
+                                    description: project.description,
+                                    projectId: project.id,
+                                  );
+
+                                  // Navigate to data page
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (context) => DataPage(
+                                        dataset: dataset,
+                                        dataFile: null,
+                                      ),
                                     ),
-                                    const SizedBox(height: 16),
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.end,
-                                      children: [
-                                        // Button to open dataset removed (FilePicker dependency)
-                                      ],
+                                  );
+                                }
+                              } catch (e) {
+                                debugPrint('Error loading datasets: $e');
+                                // Fallback to basic navigation
+                                final dataset = Dataset(
+                                  id: project.id,
+                                  name: project.name,
+                                  description: project.description,
+                                );
+
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => DataPage(
+                                      dataset: dataset,
+                                      dataFile: null,
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                );
+                              }
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    project.name.toString(),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleLarge
+                                        ?.copyWith(fontWeight: FontWeight.bold),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    project.description.toString(),
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodyMedium,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      // Button to open dataset removed (FilePicker dependency)
+                                    ],
+                                  ),
+                                ],
                               ),
                             ),
                           ),

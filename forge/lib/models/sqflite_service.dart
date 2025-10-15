@@ -19,6 +19,7 @@ class SqfliteService {
 
     final db = await openDatabase(
       join(dbPath, 'forge.db'),
+      
       onCreate: (db, version) async {
         // initial creation handled below as well
       },
@@ -94,6 +95,38 @@ class SqfliteService {
     return db;
   }
 
+  // Dataset CRUD
+  static Future<int> createDataset(Dataset dataset, String filePath) async {
+    final db = await connect();
+    return await db.insert('datasets', {
+      'name': dataset.name,
+      'description': dataset.description,
+      'type': dataset.type,
+      'path': filePath,
+      'project_id': dataset.projectId,
+    });
+  }
+
+  static Future<List<Dataset>> getDatasetsByProject(int projectId) async {
+    final db = await connect();
+    final List<Map<String, dynamic>> maps = await db.query(
+      'datasets',
+      where: 'project_id = ?',
+      whereArgs: [projectId],
+    );
+
+    return List.generate(maps.length, (i) {
+      return Dataset(
+        id: maps[i]['id'],
+        name: maps[i]['name'],
+        description: maps[i]['description'],
+        type: maps[i]['type'],
+        path: maps[i]['path'],
+        projectId: maps[i]['project_id'],
+      );
+    });
+  }
+
   // User CRUD
   static Future<void> createUser(User user) async {
     final db = await connect();
@@ -101,7 +134,6 @@ class SqfliteService {
       'username': user.username,
       'email': user.email,
       'password': user.password,
-      'team_id': user.teamId,
     });
   }
 
@@ -115,7 +147,6 @@ class SqfliteService {
         username: row['username'] as String,
         email: row['email'] as String,
         password: row['password'] as String,
-        teamId: row['team_id'] as int,
       );
     }
     return null;
@@ -129,7 +160,6 @@ class SqfliteService {
         'username': user.username,
         'email': user.email,
         'password': user.password,
-        'team_id': user.teamId,
       },
       where: 'id = ?',
       whereArgs: [user.id],
@@ -141,42 +171,13 @@ class SqfliteService {
     await db.delete('users', where: 'id = ?', whereArgs: [id]);
   }
 
-  // Team CRUD
-  static Future<void> createTeam(Team team) async {
-    final db = await connect();
-    await db.insert('teams', {'name': team.name});
-  }
-
-  static Future<Team?> getTeam(int id) async {
-    final db = await connect();
-    var results = await db.query('teams', where: 'id = ?', whereArgs: [id]);
-    if (results.isNotEmpty) {
-      var row = results.first;
-      return Team(
-        id: row['id'] as int,
-        name: row['name'] as String,
-      );
-    }
-    return null;
-  }
-
-  static Future<void> updateTeam(Team team) async {
-    final db = await connect();
-    await db.update('teams', {'name': team.name}, where: 'id = ?', whereArgs: [team.id]);
-  }
-
-  static Future<void> deleteTeam(int id) async {
-    final db = await connect();
-    await db.delete('teams', where: 'id = ?', whereArgs: [id]);
-  }
-
   // Project CRUD
   static Future<void> createProject(Project project) async {
     final db = await connect();
     await db.insert('projects', {
+      'id': project.id,
       'name': project.name,
       'description': project.description,
-      'team_id': project.teamId,
     });
   }
 
@@ -189,7 +190,6 @@ class SqfliteService {
         id: row['id'] as int,
         name: row['name'] as String,
         description: row['description'] as String,
-        teamId: row['team_id'] as int,
       );
     }
     return null;
@@ -202,7 +202,6 @@ class SqfliteService {
       {
         'name': project.name,
         'description': project.description,
-        'team_id': project.teamId,
       },
       where: 'id = ?',
       whereArgs: [project.id],
@@ -221,16 +220,6 @@ class SqfliteService {
   }
 
   // Dataset CRUD
-  static Future<void> createDataset(Dataset dataset) async {
-    final db = await connect();
-    await db.insert('datasets', {
-      'name': dataset.name,
-      'description': dataset.description,
-      'type': dataset.type,
-      'path': dataset.path,
-      'project_id': dataset.projectId,
-    });
-  }
 
   static Future<Dataset?> getDataset(int id) async {
     final db = await connect();
@@ -282,7 +271,11 @@ class SqfliteService {
 
   static Future<Blueprint?> getBlueprint(int id) async {
     final db = await connect();
-    var results = await db.query('blueprints', where: 'id = ?', whereArgs: [id]);
+    var results = await db.query(
+      'blueprints',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
     if (results.isNotEmpty) {
       var row = results.first;
       return Blueprint(
@@ -328,7 +321,11 @@ class SqfliteService {
 
   static Future<Algorithm?> getAlgorithm(int id) async {
     final db = await connect();
-    var results = await db.query('algorithms', where: 'id = ?', whereArgs: [id]);
+    var results = await db.query(
+      'algorithms',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
     if (results.isNotEmpty) {
       var row = results.first;
       return Algorithm(

@@ -2,7 +2,9 @@ import 'package:collection/collection.dart';
 
 class DuplicateDataHandler<T> {
   /// Identifies exact duplicate rows in a list of maps (e.g., database rows).
-  List<Map<String, dynamic>> findExactDuplicates(List<Map<String, dynamic>> rows) {
+  List<Map<String, dynamic>> findExactDuplicates(
+    List<Map<String, dynamic>> rows,
+  ) {
     final seen = <String, int>{};
     final duplicates = <Map<String, dynamic>>[];
 
@@ -18,7 +20,9 @@ class DuplicateDataHandler<T> {
   }
 
   /// Drops exact duplicate rows, keeping only the first occurrence.
-  List<Map<String, dynamic>> dropExactDuplicates(List<Map<String, dynamic>> rows) {
+  List<Map<String, dynamic>> dropExactDuplicates(
+    List<Map<String, dynamic>> rows,
+  ) {
     final seen = <String, bool>{};
     final result = <Map<String, dynamic>>[];
 

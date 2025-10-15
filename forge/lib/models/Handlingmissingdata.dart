@@ -3,7 +3,9 @@ import 'dart:math';
 class DataCleaner {
   /// Removes rows with more than [rowThreshold] missing values.
   static List<List<dynamic>> removeRowsWithMissing(
-      List<List<dynamic>> data, int rowThreshold) {
+    List<List<dynamic>> data,
+    int rowThreshold,
+  ) {
     return data.where((row) {
       int missingCount = row.where((v) => v == null).length;
       return missingCount <= rowThreshold;
@@ -12,7 +14,9 @@ class DataCleaner {
 
   /// Removes columns with more than [colThreshold] missing values.
   static List<List<dynamic>> removeColumnsWithMissing(
-      List<List<dynamic>> data, int colThreshold) {
+    List<List<dynamic>> data,
+    int colThreshold,
+  ) {
     if (data.isEmpty) return data;
     int cols = data[0].length;
     List<int> keepCols = [];
@@ -23,9 +27,7 @@ class DataCleaner {
       }
       if (missingCount <= colThreshold) keepCols.add(c);
     }
-    return data
-        .map((row) => [for (var c in keepCols) row[c]])
-        .toList();
+    return data.map((row) => [for (var c in keepCols) row[c]]).toList();
   }
 
   /// Imputes missing values with column mean (for numeric columns).
@@ -50,10 +52,7 @@ class DataCleaner {
 
     // Impute missing
     return data
-        .map((row) => [
-              for (int c = 0; c < cols; c++)
-                row[c] ?? means[c]
-            ])
+        .map((row) => [for (int c = 0; c < cols; c++) row[c] ?? means[c]])
         .toList();
   }
 }

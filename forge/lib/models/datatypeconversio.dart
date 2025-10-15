@@ -4,7 +4,10 @@ class DataTypeConversion {
   // Converts a list of string columns to categorical variables (as enums)
   static List<T> toCategorical<T>(List<String> values, List<T> categories) {
     return values.map((v) {
-      final idx = categories.map((e) => e.toString().split('.').last).toList().indexOf(v);
+      final idx = categories
+          .map((e) => e.toString().split('.').last)
+          .toList()
+          .indexOf(v);
       if (idx != -1) {
         return categories[idx];
       }
@@ -23,7 +26,10 @@ class DataTypeConversion {
   }
 
   // Converts a list of strings to DateTime objects
-  static List<DateTime?> toDateTimeList(List<String> values, {String format = 'yyyy-MM-dd'}) {
+  static List<DateTime?> toDateTimeList(
+    List<String> values, {
+    String format = 'yyyy-MM-dd',
+  }) {
     final formatter = DateFormat(format);
     return values.map((v) {
       try {
@@ -35,7 +41,12 @@ class DataTypeConversion {
   }
 
   // Example: Convert a column based on type
-  static dynamic convertColumn(List<String> values, String type, {List<dynamic>? categories, String? dateFormat}) {
+  static dynamic convertColumn(
+    List<String> values,
+    String type, {
+    List<dynamic>? categories,
+    String? dateFormat,
+  }) {
     switch (type) {
       case 'int':
         return toIntList(values);
@@ -44,7 +55,10 @@ class DataTypeConversion {
       case 'datetime':
         return toDateTimeList(values, format: dateFormat ?? 'yyyy-MM-dd');
       case 'categorical':
-        if (categories == null) throw ArgumentError('Categories must be provided for categorical conversion');
+        if (categories == null)
+          throw ArgumentError(
+            'Categories must be provided for categorical conversion',
+          );
         return toCategorical(values, categories);
       default:
         return values;

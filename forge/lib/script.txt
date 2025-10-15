@@ -1,0 +1,108 @@
+-- Database Project Important Reports Query Script
+
+-- 1. Dataset Overview Report
+-- This query provides a comprehensive overview of all datasets in the system
+SELECT 
+    d.id AS dataset_id,
+    d.name AS dataset_name,
+    d.description,
+    d.type,
+    p.name AS project_name,
+    COUNT(DISTINCT c.id) AS column_count,
+    COUNT(DISTINCT r.id) AS row_count,
+    SUM(CASE WHEN c.value IS NULL OR c.value = '' THEN 1 ELSE 0 END) AS empty_cells_count,
+    ROUND((SUM(CASE WHEN c.value IS NULL OR c.value = '' THEN 1 ELSE 0 END) * 100.0) / COUNT(c.id), 2) AS empty_cells_percentage
+FROM 
+    datasets d
+LEFT JOIN 
+    projects p ON d.project_id = p.id
+LEFT JOIN 
+    columns c ON d.id = c.dataset_id
+LEFT JOIN 
+    rows r ON d.id = r.dataset_id
+GROUP BY 
+    d.id, d.name, d.description, d.type, p.name
+ORDER BY 
+    empty_cells_percentage DESC;
+
+-- 2. Data Quality Report
+-- This query identifies potential data quality issues across datasets
+SELECT 
+    d.name AS dataset_name,
+    c.name AS column_name,
+    c.data_type,
+    COUNT(r.id) AS total_values,
+    SUM(CASE WHEN r.value IS NULL OR r.value = '' THEN 1 ELSE 0 END) AS null_count,
+    ROUND((SUM(CASE WHEN r.value IS NULL OR r.value = '' THEN 1 ELSE 0 END) * 100.0) / COUNT(r.id), 2) AS null_percentage,
+    COUNT(DISTINCT r.value) AS unique_values,
+    ROUND((COUNT(DISTINCT r.value) * 100.0) / COUNT(r.id), 2) AS uniqueness_percentage
+FROM 
+    datasets d
+JOIN 
+    columns c ON d.id = c.dataset_id
+JOIN 
+    rows r ON c.id = r.column_id
+GROUP BY 
+    d.name, c.name, c.data_type
+HAVING 
+    null_percentage > 10 OR uniqueness_percentage < 5
+ORDER BY 
+    null_percentage DESC, uniqueness_percentage ASC;
+
+-- 3. Project Activity Report
+-- This query shows project activity and dataset usage
+SELECT 
+    p.name AS project_name,
+    u.username AS owner,
+    COUNT(DISTINCT d.id) AS dataset_count,
+    MAX(d.last_modified) AS last_activity,
+    DATEDIFF(DAY, MAX(d.last_modified), GETDATE()) AS days_since_last_activity,
+    SUM(d.size_kb) / 1024 AS total_size_mb
+FROM 
+    projects p
+JOIN 
+    users u ON p.owner_id = u.id
+LEFT JOIN 
+    datasets d ON p.id = d.project_id
+GROUP BY 
+    p.name, u.username
+ORDER BY 
+    last_activity DESC;
+
+-- 4. Data Type Distribution Report
+-- This query analyzes the distribution of data types across datasets
+SELECT 
+    d.name AS dataset_name,
+    c.data_type,
+    COUNT(*) AS column_count,
+    ROUND((COUNT(*) * 100.0) / (SELECT COUNT(*) FROM columns WHERE dataset_id = d.id), 2) AS percentage
+FROM 
+    datasets d
+JOIN 
+    columns c ON d.id = c.dataset_id
+GROUP BY 
+    d.name, c.data_type
+ORDER BY 
+    d.name, percentage DESC;
+
+-- 5. User Activity Report
+-- This query tracks user engagement with the system
+SELECT 
+    u.username,
+    COUNT(DISTINCT p.id) AS project_count,
+    COUNT(DISTINCT d.id) AS dataset_count,
+    MAX(a.activity_date) AS last_activity,
+    DATEDIFF(DAY, MAX(a.activity_date), GETDATE()) AS days_since_last_activity,
+    COUNT(a.id) AS total_activities
+FROM 
+    users u
+LEFT JOIN 
+    projects p ON u.id = p.owner_id
+LEFT JOIN 
+    datasets d ON p.id = d.project_id
+LEFT JOIN 
+    activity_log a ON u.id = a.user_id
+GROUP BY 
+    u.username
+ORDER BY 
+    total_activities DESC;
