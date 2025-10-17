@@ -42,19 +42,6 @@ class Dataset {
   });
 }
 
-class Blueprint {
-  final int id;
-  final String name;
-  final String type;
-  final int projectId;
-
-  Blueprint({
-    required this.id,
-    required this.name,
-    required this.type,
-    required this.projectId,
-  });
-}
 
 class Algorithm {
   final int id;
@@ -72,5 +59,39 @@ class Algorithm {
     required this.code,
     required this.parameters,
     required this.blueprintId,
+  });
+}
+
+class Column {
+  final int id;
+  final String name;
+  final String dataType;
+  final bool isNullable;
+  final bool isPrimaryKey;
+  final int datasetId;
+
+  Column({
+    required this.id,
+    required this.name,
+    required this.dataType,
+    this.isNullable = true,
+    this.isPrimaryKey = false,
+    required this.datasetId,
+  });
+}
+
+class Cell {
+  final int id;
+  final String value;
+  final int rowId;
+  final int columnId;
+  final int isOutlier;
+
+  Cell({
+    required this.id,
+    required this.value,
+    required this.rowId,
+    required this.columnId,
+    this.isOutlier = 0,
   });
 }

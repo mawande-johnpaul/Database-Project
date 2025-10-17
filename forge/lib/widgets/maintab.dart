@@ -26,8 +26,8 @@ class _MaintabState extends State<Maintab> {
       children: [
         ProjectsPage(appData: widget.appData, selected: widget.selected),
         Editor(initialCode: '# Your code here'),
-        AnalyticsPage(),
-        const Center(child: Text('Team Content')),
+        //AnalyticsPage(),
+        //const Center(child: Text('Team Content')),
         const Center(child: Text('Settings Content')),
       ],
     );

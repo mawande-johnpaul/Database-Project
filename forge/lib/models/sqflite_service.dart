@@ -42,14 +42,6 @@ class SqfliteService {
       )
     ''');
 
-    // Teams table -added NOT NULL +unique constraints
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS teams (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL UNIQUE
-      )
-    ''');
-
     //UPDATED- Projects table - Linked to Teams table
     await db.execute('''
       CREATE TABLE IF NOT EXISTS projects (
@@ -74,17 +66,6 @@ class SqfliteService {
       )
     ''');
 
-    // UPDATED: Blueprints table - added foreign key constraint
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS blueprints (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        type TEXT,
-        project_id INTEGER NOT NULL,
-        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
-      )
-    ''');
-
     //UPDATED: Algorithms table - added foreign key and NOT NULL fields
     await db.execute('''
       CREATE TABLE IF NOT EXISTS algorithms (
@@ -95,6 +76,31 @@ class SqfliteService {
         parameters TEXT,
         blueprint_id INTEGER NOT NULL,
         FOREIGN KEY (blueprint_id) REFERENCES blueprints(id) ON DELETE CASCADE
+      )
+    ''');
+
+    //create Columns table
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS columns (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        data_type TEXT NOT NULL,
+        is_nullable INTEGER NOT NULL,
+        is_primary_key INTEGER NOT NULL,
+        dataset_id INTEGER NOT NULL,
+        FOREIGN KEY (dataset_id) REFERENCES datasets(id) ON DELETE CASCADE
+      )
+    ''');
+
+    // Create Cells table
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS cells (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        row_id INTEGER NOT NULL,
+        is_outlier INTEGER NOT NULL,
+        column_id INTEGER NOT NULL,
+        value TEXT,
+        FOREIGN KEY (column_id) REFERENCES columns(id) ON DELETE CASCADE
       )
     ''');
 
@@ -265,54 +271,6 @@ class SqfliteService {
     await db.delete('datasets', where: 'id = ?', whereArgs: [id]);
   }
 
-  // Blueprint CRUD
-  static Future<void> createBlueprint(Blueprint blueprint) async {
-    final db = await connect();
-    await db.insert('blueprints', {
-      'name': blueprint.name,
-      'type': blueprint.type,
-      'project_id': blueprint.projectId,
-    });
-  }
-
-  static Future<Blueprint?> getBlueprint(int id) async {
-    final db = await connect();
-    var results = await db.query(
-      'blueprints',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
-    if (results.isNotEmpty) {
-      var row = results.first;
-      return Blueprint(
-        id: row['id'] as int,
-        name: row['name'] as String,
-        type: row['type'] as String,
-        projectId: row['project_id'] as int,
-      );
-    }
-    return null;
-  }
-
-  static Future<void> updateBlueprint(Blueprint blueprint) async {
-    final db = await connect();
-    await db.update(
-      'blueprints',
-      {
-        'name': blueprint.name,
-        'type': blueprint.type,
-        'project_id': blueprint.projectId,
-      },
-      where: 'id = ?',
-      whereArgs: [blueprint.id],
-    );
-  }
-
-  static Future<void> deleteBlueprint(int id) async {
-    final db = await connect();
-    await db.delete('blueprints', where: 'id = ?', whereArgs: [id]);
-  }
-
   // Algorithm CRUD
   static Future<void> createAlgorithm(Algorithm algorithm) async {
     final db = await connect();
@@ -367,17 +325,6 @@ class SqfliteService {
     await db.delete('algorithms', where: 'id = ?', whereArgs: [id]);
   }
 
-
- // Get all projects with their team names
-  static Future<List<Map<String, dynamic>>> getProjectsWithTeams() async {
-    final db = await connect();
-    return await db.rawQuery('''
-      SELECT projects.name AS project_name, teams.name AS team_name
-      FROM projects
-      INNER JOIN teams ON projects.team_id = teams.id
-    ''');
-  }
-
   // Get all datasets for a given project
   static Future<List<Map<String, dynamic>>> getDatasetsForProject(int projectId) async {
     final db = await connect();
@@ -395,19 +342,49 @@ class SqfliteService {
     return Sqflite.firstIntValue(result) ?? 0;
   }
 
-  // Delete all projects for a specific team (demonstrates DELETE query)
-  static Future<void> deleteProjectsByTeam(int teamId) async {
-    final db = await connect();
-    await db.rawDelete('DELETE FROM projects WHERE team_id = ?', [teamId]);
-  }
-
-  // Get all algorithms linked to a specific blueprint
-  static Future<List<Map<String, dynamic>>> getAlgorithmsByBlueprint(int blueprintId) async {
+  // Get all columns of a given dataset
+  static Future<List<Map<String, dynamic>>> getColumnsForDataset(int datasetId) async {
     final db = await connect();
     return await db.rawQuery('''
-      SELECT name, description, parameters
-      FROM algorithms
-      WHERE blueprint_id = ?
-    ''', [blueprintId]);
+      SELECT name, data_type, is_nullable, is_primary_key
+      FROM columns
+      WHERE dataset_id = ?
+    ''', [datasetId]);
   }
+
+  // Get all cells for a given column
+  static Future<List<Map<String, dynamic>>> getCellsForColumn(int columnId) async {
+    final db = await connect();
+    return await db.rawQuery('''
+      SELECT row_id, value, is_outlier
+      FROM cells
+      WHERE column_id = ?
+    ''', [columnId]);
+  }
+
+  //Get null and empty cells count for a given column
+  static Future<int> getNullAndEmptyCellCount(int columnId) async {
+    final db = await connect();
+    var result = await db.rawQuery('''
+      SELECT COUNT(*) AS total
+      FROM cells
+      WHERE column_id = ? AND (value IS NULL OR value = '')
+    ''', [columnId]);
+    return Sqflite.firstIntValue(result) ?? 0;
+  }
+
+  //Get column data type distribution
+  static Future<List<Map<String, dynamic>>> getColumnDataTypeDistribution(int datasetId) async {
+    final db = await connect();
+    return await db.rawQuery('''
+      SELECT data_type, COUNT(*) AS count
+      FROM columns
+      WHERE dataset_id = ?
+      GROUP BY data_type
+    ''', [datasetId]);
+  }
+
+  
+
+
 }

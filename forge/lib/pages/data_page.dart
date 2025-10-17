@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:forge/models/datasheet.dart';
+import 'package:forge/models/datasheet.dart' hide Column;
 import 'package:forge/models/io.dart';
 import 'package:forge/models/file_picker_service.dart';
 import 'package:forge/widgets/button.dart';
@@ -252,7 +252,7 @@ class _DataPageState extends State<DataPage> {
                   title,
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: 14,
+                    fontSize: 20,
                   ),
                 ),
               ],
@@ -261,7 +261,7 @@ class _DataPageState extends State<DataPage> {
             Text(
               value,
               style: TextStyle(
-                fontSize: 18,
+                fontSize: 28,
                 fontWeight: FontWeight.w500,
                 color: color,
               ),
@@ -352,171 +352,117 @@ class _DataPageState extends State<DataPage> {
       );
     }
 
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Dataset info
-          Text(
-            widget.dataset!.name,
-            style: Theme.of(context).textTheme.headlineMedium,
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(widget.dataset!.name),
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'Insights', icon: Icon(Icons.insights)),
+              Tab(text: 'Preview', icon: Icon(Icons.table_chart)),
+            ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            widget.dataset!.description,
-            style: Theme.of(context).textTheme.bodyLarge,
-          ),
-          const SizedBox(height: 24),
-
-          // Dataset Insights
-          Text(
-            'Dataset Insights',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 8),
-          Container(
-            height: 300,
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Overview section
-                  Text(
-                    'Dataset Overview',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 8),
-
-                  // First row of insight cards
-                  Expanded(
-                    child: GridView.count(
-                      crossAxisCount: 3,
-                      childAspectRatio: 2.0,
-                      crossAxisSpacing: 10,
-                      mainAxisSpacing: 10,
-                      children: [
-                        // Total rows card
-                        _buildInsightCard(
-                          'Total Rows',
-                          totalRows.toString(),
-                          Icons.table_rows,
-                          Colors.blue,
-                        ),
-
-                        // Total columns card
-                        _buildInsightCard(
-                          'Total Columns',
-                          totalColumns.toString(),
-                          Icons.view_column,
-                          Colors.green,
-                        ),
-
-                        // Empty cells card
-                        _buildInsightCard(
-                          'Empty Cells',
-                          '$totalEmptyCells (${emptyPercentage.toStringAsFixed(1)}%)',
-                          Icons.space_bar,
-                          Colors.orange,
-                        ),
-
-                        // Column with most empty cells
-                        _buildInsightCard(
-                          'Most Empty Column',
-                          columnWithMostEmptyCells,
-                          Icons.warning_amber,
-                          Colors.red,
-                        ),
-
-                        // Numeric columns count
-                        _buildInsightCard(
-                          'Numeric Columns',
-                          dataTypeDistribution['numeric'].toString(),
-                          Icons.numbers,
-                          Colors.purple,
-                        ),
-
-                        // Text columns count
-                        _buildInsightCard(
-                          'Text Columns',
-                          dataTypeDistribution['text'].toString(),
-                          Icons.text_fields,
-                          Colors.teal,
-                        ),
-                      ],
+        ),
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: TabBarView(
+            children: [
+              // Insights Tab
+              SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.dataset!.description,
+                      style: Theme.of(context).textTheme.bodyLarge,
                     ),
-                  ),
-
-                  // Column details section
-                  const SizedBox(height: 12),
-                  Text(
-                    'Column Details',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 8),
-
-                  // Column details list
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: columnNames.length,
-                      itemBuilder: (context, index) {
-                        final columnName = columnNames[index];
-                        final dataType = columnDataTypes[columnName] ?? 'text';
-                        final emptyCells = nullCellsPerColumn[columnName] ?? 0;
-                        final emptyPercentage = data.isNotEmpty
-                            ? (emptyCells / data.length * 100).toStringAsFixed(
-                                1,
-                              )
-                            : '0.0';
-
-                        return Card(
-                          margin: const EdgeInsets.symmetric(vertical: 4),
-                          child: ListTile(
-                            title: Text(columnName),
-                            subtitle: Text('Type: ${dataType.capitalize()}'),
-                            trailing: Text(
-                              'Empty: $emptyCells ($emptyPercentage%)',
-                              style: TextStyle(
-                                color: emptyCells > 0
-                                    ? Colors.orange
-                                    : Colors.green,
-                                fontWeight: FontWeight.bold,
+                    const SizedBox(height: 24),
+                    Text(
+                      'Dataset Insights',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      height: 800,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: GridView.count(
+                                crossAxisCount: 3,
+                                childAspectRatio: 2.0,
+                                crossAxisSpacing: 10,
+                                mainAxisSpacing: 10,
+                                children: [
+                                  _buildInsightCard(
+                                    'Total Rows',
+                                    totalRows.toString(),
+                                    Icons.table_rows,
+                                    Colors.blue,
+                                  ),
+                                  _buildInsightCard(
+                                    'Total Columns',
+                                    totalColumns.toString(),
+                                    Icons.view_column,
+                                    Colors.green,
+                                  ),
+                                  _buildInsightCard(
+                                    'Empty Cells',
+                                    '$totalEmptyCells (${emptyPercentage.toStringAsFixed(1)}%)',
+                                    Icons.space_bar,
+                                    Colors.orange,
+                                  ),
+                                  _buildInsightCard(
+                                    'Most Empty Column',
+                                    columnWithMostEmptyCells,
+                                    Icons.warning_amber,
+                                    Colors.red,
+                                  ),
+                                  _buildInsightCard(
+                                    'Numeric Columns',
+                                    dataTypeDistribution['numeric'].toString(),
+                                    Icons.numbers,
+                                    Colors.purple,
+                                  ),
+                                  _buildInsightCard(
+                                    'Text Columns',
+                                    dataTypeDistribution['text'].toString(),
+                                    Icons.text_fields,
+                                    Colors.teal,
+                                  ),
+                                ],
                               ),
                             ),
-                          ),
-                        );
-                      },
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // Data table
-          Text('Data Preview', style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: 8),
-          Expanded(
-            child: PlutoGrid(
-              columns: columns,
-              rows: rows,
-              onLoaded: (PlutoGridOnLoadedEvent event) {
-                // You can access the grid controller via event.gridController
-              },
-              configuration: PlutoGridConfiguration(
-                columnFilter: PlutoGridColumnFilterConfig(
-                  filters: const [...FilterHelper.defaultFilters],
+                  ],
                 ),
               ),
-            ),
+              // Data Preview Tab
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: PlutoGrid(
+                  columns: columns,
+                  rows: rows,
+                  onLoaded: (PlutoGridOnLoadedEvent event) {},
+                  configuration: PlutoGridConfiguration(
+                    columnFilter: PlutoGridColumnFilterConfig(
+                      filters: const [...FilterHelper.defaultFilters],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

@@ -1,9 +1,10 @@
 // ignore_for_file: dead_code
 
 import 'package:flutter/material.dart';
-import 'package:forge/models/datasheet.dart';
+import 'package:forge/models/datasheet.dart' hide Column;
 import 'package:forge/models/file_picker_service.dart';
 import 'package:forge/models/io.dart';
+import 'package:forge/models/sqflite_service.dart';
 import 'package:forge/pages/data_page.dart';
 import 'package:forge/widgets/button.dart';
 import 'package:forge/widgets/sec_button.dart';
@@ -20,10 +21,107 @@ class ProjectsPage extends StatefulWidget {
 }
 
 class _ProjectsPageState extends State<ProjectsPage> {
+  Future<Map<String, String>?> _showProjectDetailsDialog(
+    BuildContext context,
+  ) async {
+    final nameController = TextEditingController();
+    final descController = TextEditingController();
+    return showDialog<Map<String, String>>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Project Details'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: InputDecoration(labelText: 'Project Name'),
+              ),
+              TextField(
+                controller: descController,
+                decoration: InputDecoration(labelText: 'Project Description'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              child: Text('Cancel'),
+              onPressed: () => Navigator.of(context).pop(null),
+            ),
+            TextButton(
+              child: Text('Continue'),
+              onPressed: () {
+                Navigator.of(context).pop({
+                  'name': nameController.text,
+                  'description': descController.text,
+                });
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<Map<String, String>?> _showDatasetDetailsDialog(
+    BuildContext context,
+  ) async {
+    final nameController = TextEditingController();
+    final descController = TextEditingController();
+    return showDialog<Map<String, String>>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Dataset Details'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: InputDecoration(labelText: 'Dataset Name'),
+              ),
+              TextField(
+                controller: descController,
+                decoration: InputDecoration(labelText: 'Dataset Description'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              child: Text('Cancel'),
+              onPressed: () => Navigator.of(context).pop(null),
+            ),
+            TextButton(
+              child: Text('Continue'),
+              onPressed: () {
+                Navigator.of(context).pop({
+                  'name': nameController.text,
+                  'description': descController.text,
+                });
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  int _refreshKey = 0;
+
+  void _triggerRefresh() {
+    setState(() {
+      _refreshKey++;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     // Use FutureBuilder to handle the asynchronous data fetching
     return FutureBuilder<List<Project>>(
+      key: ValueKey(_refreshKey),
       future: getProjects().then((data) {
         return data
             .map(
@@ -36,7 +134,7 @@ class _ProjectsPageState extends State<ProjectsPage> {
             .toList();
       }),
       builder: (context, snapshot) {
-        List<Project> savedProjects = snapshot.data!;
+        List<Project> savedProjects = snapshot.data ?? [];
         DataPage page = DataPage(dataset: null, dataFile: null);
 
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -52,33 +150,115 @@ class _ProjectsPageState extends State<ProjectsPage> {
               Button(
                 icon: Icons.add_rounded,
                 title: "Create project",
-                onPressed: () {
-                  //open a file manager window to select a csv file
-                  try {
-                    // Get file path and load dataset
-                    final fileFuture = FilePickerService.pickFile(
-                      allowMultiple: false,
-                      allowedExtensions: ['csv'],
-                    );
-                    getDataset(fileFuture).then((dataset) {
-                      if (dataset.isNotEmpty) {
-                        // Create new project with the dataset
-                        var newProject = Project(
-                          id: DateTime.now().millisecondsSinceEpoch,
-                          name: 'New Project',
-                          description: 'A newly created project',
-                        );
-
-                        // Save the project and update UI
-                        createProject(newProject).then((_) {
-                          setState(() {
-                            // This will trigger a rebuild and fetch projects again
-                          });
-                        });
-                      }
-                    });
-                  } catch (e) {
-                    debugPrint('Error importing CSV: $e');
+                onPressed: () async {
+                  final filePath = await FilePickerService.pickFile(
+                    allowMultiple: false,
+                    allowedExtensions: ['csv'],
+                  );
+                  if (filePath != null) {
+                    try {
+                      // Show saving project dialog
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            title: Text('Creating Project'),
+                            content: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                CircularProgressIndicator(),
+                                SizedBox(height: 16),
+                                Text('Creating new project...'),
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                      final projectDetails = await _showProjectDetailsDialog(
+                        context,
+                      );
+                      if (projectDetails == null) return;
+                      var newProject = Project(
+                        id: DateTime.now().millisecondsSinceEpoch,
+                        name: projectDetails['name'] ?? '',
+                        description: projectDetails['description'] ?? '',
+                      );
+                      await createProject(newProject);
+                      Navigator.of(context).pop();
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            title: Text('Importing Dataset'),
+                            content: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                CircularProgressIndicator(),
+                                SizedBox(height: 16),
+                                Text('Importing dataset from CSV...'),
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                      final datasetDetails = await _showDatasetDetailsDialog(
+                        context,
+                      );
+                      if (datasetDetails == null) return;
+                      var dataset = Dataset(
+                        id: DateTime.now().millisecondsSinceEpoch + 1,
+                        name: datasetDetails['name'] ?? '',
+                        description: datasetDetails['description'] ?? '',
+                        type: 'csv',
+                        path: filePath,
+                        projectId: newProject.id,
+                      );
+                      await createDataset(dataset, filePath);
+                      Navigator.of(context).pop();
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            title: Text('Success'),
+                            content: Text(
+                              'Project and dataset created successfully.',
+                            ),
+                            actions: [
+                              TextButton(
+                                child: Text('OK'),
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                },
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                      setState(() {});
+                    } catch (e) {
+                      debugPrint('Error importing CSV: $e');
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            title: Text('Error'),
+                            content: Text(
+                              'Failed to create project or import dataset: ${e.toString()}',
+                            ),
+                            actions: [
+                              TextButton(
+                                child: Text('OK'),
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                },
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    }
                   }
                 },
               ),
@@ -104,37 +284,134 @@ class _ProjectsPageState extends State<ProjectsPage> {
 
                       if (filePath != null) {
                         try {
+                          // Show saving project dialog
+                          showDialog(
+                            context: context,
+                            barrierDismissible: false,
+                            builder: (BuildContext context) {
+                              return AlertDialog(
+                                title: Text('Creating Project'),
+                                content: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    CircularProgressIndicator(),
+                                    SizedBox(height: 16),
+                                    Text('Creating new project...'),
+                                  ],
+                                ),
+                              );
+                            },
+                          );
+
                           // Create a new project with the imported CSV data
-                          var newProject = Project(
-                            id: DateTime.now().millisecondsSinceEpoch,
-                            name: 'Project from CSV',
-                            description: 'Imported from CSV file',
-                          );
+                          _showProjectDetailsDialog(context).then((
+                            projectDetails,
+                          ) {
+                            if (projectDetails == null) return;
 
-                          // Save the project to the database
-                          await createProject(newProject);
+                            var newProject = Project(
+                              id: DateTime.now().millisecondsSinceEpoch,
+                              name: projectDetails['name'] ?? '',
+                              description: projectDetails['description'] ?? '',
+                            );
 
-                          // Create a dataset linked to this project
-                          var dataset = Dataset(
-                            id: DateTime.now().millisecondsSinceEpoch + 1,
-                            name: 'Dataset from CSV',
-                            description:
-                                'Imported from ${filePath.split('\\').last}',
-                            type: 'csv',
-                            path: filePath,
-                            projectId: newProject.id,
-                          );
+                            // Save the project to the database
+                            createProject(newProject).then((_) {
+                              // Hide the project creation dialog
+                              Navigator.of(context).pop();
 
-                          // Save the dataset with the file path
-                          await createDataset(dataset, filePath);
+                              // Show dataset import dialog
+                              showDialog(
+                                context: context,
+                                barrierDismissible: false,
+                                builder: (BuildContext context) {
+                                  return AlertDialog(
+                                    title: Text('Importing Dataset'),
+                                    content: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        CircularProgressIndicator(),
+                                        SizedBox(height: 16),
+                                        Text('Importing dataset from CSV...'),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              );
 
-                          // Refresh the state to show the new project
-                          setState(() {
-                            // This will trigger a rebuild and fetch projects again
+                              // After picking file, before creating dataset:
+                              _showDatasetDetailsDialog(context).then((
+                                datasetDetails,
+                              ) {
+                                if (datasetDetails == null) return;
+
+                                // Create a dataset linked to this project
+                                var dataset = Dataset(
+                                  id: DateTime.now().millisecondsSinceEpoch + 1,
+                                  name: datasetDetails['name'] ?? '',
+                                  description:
+                                      datasetDetails['description'] ?? '',
+                                  type: 'csv',
+                                  path: filePath,
+                                  projectId: newProject.id,
+                                );
+
+                                // Save the dataset with the file path
+                                createDataset(dataset, filePath).then((_) {
+                                  // Hide the dataset import dialog
+                                  Navigator.of(context).pop();
+
+                                  // Show success message
+                                  showDialog(
+                                    context: context,
+                                    builder: (BuildContext context) {
+                                      return AlertDialog(
+                                        title: Text('Success'),
+                                        content: Text(
+                                          'Project and dataset created successfully.',
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            child: Text('OK'),
+                                            onPressed: () {
+                                              Navigator.of(context).pop();
+                                            },
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  );
+
+                                  // Refresh the state to show the new project
+                                  setState(() {
+                                    // This will trigger a rebuild and fetch projects again
+                                  });
+                                });
+                              });
+                            });
                           });
                         } catch (e) {
                           debugPrint('Error importing CSV: $e');
-                          // Show error message if needed
+                          // Show error dialog
+                          showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return AlertDialog(
+                                title: Text('Error'),
+                                content: Text(
+                                  'Failed to create project or import dataset: ${e.toString()}',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    child: Text('OK'),
+                                    onPressed: () {
+                                      Navigator.of(context).pop();
+                                    },
+                                  ),
+                                ],
+                              );
+                            },
+                          );
                         }
                       }
                     },
@@ -245,17 +522,53 @@ class _ProjectsPageState extends State<ProjectsPage> {
                                         ?.copyWith(fontWeight: FontWeight.bold),
                                   ),
                                   const SizedBox(height: 4),
-                                  Text(
-                                    project.description.toString(),
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodyMedium,
+                                  FutureBuilder<List<Dataset>>(
+                                    future: getDatasetsByProject(project.id),
+                                    builder: (context, dsSnap) {
+                                      String datasetTitle = '';
+                                      if (dsSnap.hasData &&
+                                          dsSnap.data!.isNotEmpty) {
+                                        datasetTitle = dsSnap.data!.first.name;
+                                      }
+                                      return Text(
+                                        datasetTitle,
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.bodyMedium,
+                                      );
+                                    },
                                   ),
                                   const SizedBox(height: 16),
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.end,
                                     children: [
-                                      // Button to open dataset removed (FilePicker dependency)
+                                      TextButton(
+                                        child: Text('Edit'),
+                                        onPressed: () {
+                                          // TODO: Implement edit dialog if needed
+                                        },
+                                      ),
+                                      TextButton(
+                                        child: Text(
+                                          'Delete',
+                                          style: TextStyle(color: Colors.red),
+                                        ),
+                                        onPressed: () async {
+                                          await SqfliteService.deleteProject(
+                                            project.id,
+                                          );
+                                          // Remove from appData if present
+                                          if (widget.appData != null &&
+                                              widget.appData['projects'] !=
+                                                  null) {
+                                            widget.appData['projects']
+                                                .removeWhere(
+                                                  (p) => p['id'] == project.id,
+                                                );
+                                          }
+                                          _triggerRefresh();
+                                        },
+                                      ),
                                     ],
                                   ),
                                 ],
