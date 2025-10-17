@@ -21,6 +21,7 @@ class _MaintabState extends State<Maintab> {
     if (widget.appData == null) {
       return const Center(child: Text('Loading...'));
     }
+<<<<<<< Updated upstream
     
     return IndexedStack(
       index: widget.selected,
@@ -33,6 +34,23 @@ class _MaintabState extends State<Maintab> {
         const Center(child: Text('Team Content')),
         const Center(child: Text('Settings Content')),
       ],
+=======
+
+    // Wrap the main tab content in a DatasetScope so all tab pages can access
+    // the currently selected dataset and its file without requiring explicit
+    // constructor parameters.
+    return DatasetScope(
+      child: IndexedStack(
+        index: widget.selected,
+        children: [
+          ProjectsPage(appData: widget.appData, selected: widget.selected),
+          Editor(initialCode: '# Your code here'),
+          DataPage(),
+          const Center(child: Text('Team Content')),
+          const Center(child: Text('Settings Content')),
+        ],
+      ),
+>>>>>>> Stashed changes
     );
   }
 }

@@ -73,6 +73,7 @@ class Dataset {
     required this.id,
     required this.name,
     required this.description,
+<<<<<<< Updated upstream
     required this.type,
     required this.path,
   });
@@ -96,6 +97,12 @@ class Dataset {
       path: map['path'],
     );
   }
+=======
+    this.type = 'csv',
+    this.path,
+    this.projectId,
+  });
+>>>>>>> Stashed changes
 }
 
 class Algorithm {
@@ -104,15 +111,23 @@ class Algorithm {
   final String description;
   final List<dynamic> parameters;
   final String code;
+<<<<<<< Updated upstream
   final int projectId;
+=======
+  final String
+  parameters; // Store as a JSON string or comma-separated values for sqflite
+>>>>>>> Stashed changes
 
   Algorithm({
     required this.id,
     required this.name,
     required this.description,
     required this.parameters,
+<<<<<<< Updated upstream
     required this.code,
     required this.projectId,
+=======
+>>>>>>> Stashed changes
   });
 
   Map<String, dynamic> toMap() {
@@ -138,6 +153,7 @@ class Algorithm {
   }
 }
 
+<<<<<<< Updated upstream
 class Project {
   final int id;
   final String name;
@@ -291,3 +307,87 @@ Future onCreate (Database db, int version) async {
 }
 
 
+=======
+// Log: timestamp as id, algorithm id (nullable), result, line number
+class LogEntry {
+  final int id; // epoch millis timestamp
+  final int? algorithmId;
+  final String? result;
+  final int? lineNumber;
+
+  LogEntry({
+    required this.id,
+    this.algorithmId,
+    this.result,
+    this.lineNumber,
+  });
+
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'algorithm_id': algorithmId,
+        'result': result,
+        'line_number': lineNumber,
+      };
+
+  factory LogEntry.fromMap(Map<String, dynamic> map) => LogEntry(
+        id: map['id'] as int,
+        algorithmId: map['algorithm_id'] as int?,
+        result: map['result'] as String?,
+        lineNumber: map['line_number'] as int?,
+      );
+}
+
+// Column: column number as id, dataset id (composite key handled in DB)
+class DatasetColumn {
+  final int datasetId;
+  final int id; // column number
+
+  DatasetColumn({
+    required this.datasetId,
+    required this.id,
+  });
+
+  Map<String, dynamic> toMap() => {
+        'dataset_id': datasetId,
+        'id': id,
+      };
+
+  factory DatasetColumn.fromMap(Map<String, dynamic> map) => DatasetColumn(
+        datasetId: map['dataset_id'] as int,
+        id: map['id'] as int,
+      );
+}
+
+// Cell: column id, data(any type), algorithm id optional, plus dataset and row index
+class CellEntry {
+  final int datasetId;
+  final int columnId;
+  final int rowIndex;
+  final dynamic data; // stored as TEXT in DB; parse as needed
+  final int? algorithmId;
+
+  CellEntry({
+    required this.datasetId,
+    required this.columnId,
+    required this.rowIndex,
+    this.data,
+    this.algorithmId,
+  });
+
+  Map<String, dynamic> toMap() => {
+        'dataset_id': datasetId,
+        'column_id': columnId,
+        'row_index': rowIndex,
+        'data': data?.toString(),
+        'algorithm_id': algorithmId,
+      };
+
+  factory CellEntry.fromMap(Map<String, dynamic> map) => CellEntry(
+        datasetId: map['dataset_id'] as int,
+        columnId: map['column_id'] as int,
+        rowIndex: map['row_index'] as int,
+        data: map['data'],
+        algorithmId: map['algorithm_id'] as int?,
+      );
+}
+>>>>>>> Stashed changes

@@ -1,0 +1,174 @@
+
+-- Reworked: Broad dataset/project/column/cell reports and operations
+-- This script assumes the database has these core tables (names below). Adjust names if your schema uses different identifiers.
+-- Required tables (assumed): users, projects, datasets, columns, cells
+-- cells table should have at least: id, column_id, row_id (optional), dataset_id, value (text), numeric_value (REAL, nullable), is_outlier (BOOLEAN, nullable)
+
+-- Migration notes (add these fields if they don't exist):
+-- ALTER TABLE cells ADD COLUMN numeric_value REAL;
+-- ALTER TABLE cells ADD COLUMN is_outlier INTEGER DEFAULT 0; -- use 0/1 for SQLite
+
+-- 0. Helper: Get all projects for a user
+-- Input: :user_id
+SELECT p.id AS project_id, p.name AS project_name, p.description
+FROM projects p
+WHERE p.owner_id = :user_id
+ORDER BY p.name;
+
+-- 1. Get all datasets belonging to a project
+-- Input: :project_id
+SELECT d.id AS dataset_id, d.name AS dataset_name, d.description, d.type, d.created_at, d.last_modified
+FROM datasets d
+WHERE d.project_id = :project_id
+ORDER BY d.name;
+
+-- 2. Get all columns for a given dataset
+-- Input: :dataset_id
+SELECT c.id AS column_id, c.name AS column_name, c.data_type, c.ordinal
+FROM columns c
+WHERE c.dataset_id = :dataset_id
+ORDER BY c.ordinal, c.name;
+
+-- 3. Get all cells for a given dataset (optionally filter by column)
+-- Input: :dataset_id [, :column_id]
+SELECT ce.id AS cell_id,
+       ce.column_id,
+       co.name AS column_name,
+       ce.row_id,
+       ce.value,
+       ce.numeric_value,
+       ce.is_outlier
+FROM cells ce
+LEFT JOIN columns co ON ce.column_id = co.id
+WHERE ce.dataset_id = :dataset_id
+  -- AND ce.column_id = :column_id -- uncomment to filter by column
+ORDER BY ce.row_id, ce.column_id;
+
+-- 4. Find null or empty cells in a dataset (counts and detail)
+-- Input: :dataset_id
+-- Summary per column
+SELECT co.id AS column_id,
+       co.name AS column_name,
+       COUNT(ce.id) AS total_cells,
+       SUM(CASE WHEN ce.value IS NULL OR TRIM(ce.value) = '' THEN 1 ELSE 0 END) AS empty_or_null_count,
+       ROUND((SUM(CASE WHEN ce.value IS NULL OR TRIM(ce.value) = '' THEN 1 ELSE 0 END) * 100.0) / COUNT(ce.id), 2) AS empty_or_null_percentage
+FROM columns co
+LEFT JOIN cells ce ON ce.column_id = co.id AND ce.dataset_id = :dataset_id
+WHERE co.dataset_id = :dataset_id
+GROUP BY co.id, co.name
+ORDER BY empty_or_null_percentage DESC;
+
+-- Detail rows for empty/null cells
+SELECT ce.id AS cell_id, ce.column_id, co.name AS column_name, ce.row_id, ce.value
+FROM cells ce
+JOIN columns co ON ce.column_id = co.id
+WHERE ce.dataset_id = :dataset_id
+  AND (ce.value IS NULL OR TRIM(ce.value) = '')
+ORDER BY co.name, ce.row_id;
+
+-- 5. Identify columns that are numeric (based on numeric_value population or heuristic)
+-- Input: :dataset_id
+-- Approach: If more than X% of cells in a column have numeric_value NOT NULL (or can be cast), mark as numeric
+SELECT co.id AS column_id,
+       co.name AS column_name,
+       COUNT(ce.id) AS total_cells,
+       SUM(CASE WHEN ce.numeric_value IS NOT NULL THEN 1 ELSE 0 END) AS numeric_populated,
+       ROUND((SUM(CASE WHEN ce.numeric_value IS NOT NULL THEN 1 ELSE 0 END) * 100.0) / COUNT(ce.id), 2) AS numeric_percentage
+FROM columns co
+LEFT JOIN cells ce ON ce.column_id = co.id AND ce.dataset_id = :dataset_id
+WHERE co.dataset_id = :dataset_id
+GROUP BY co.id, co.name
+HAVING COUNT(ce.id) > 0
+ORDER BY numeric_percentage DESC;
+
+-- 6. Mark cells' numeric_value by trying to parse value (application-layer preferred).
+-- For SQLite you can attempt to coerce using CAST, but it's safer to compute and write numeric_value from the application (see datasheet.dart and sqflite_service.dart).
+-- Example (SQLite cast attempt) -- Input: :dataset_id
+UPDATE cells
+SET numeric_value = CASE
+    WHEN trim(value) = '' OR value IS NULL THEN NULL
+    WHEN instr(value, '.') > 0 OR instr(value, ',') > 0 THEN REPLACE(value, ',', '.') * 1.0
+    WHEN value GLOB '-?[0-9]*' THEN CAST(value AS REAL)
+    ELSE NULL
+END
+WHERE dataset_id = :dataset_id;
+
+-- 7. Detect outliers in numeric columns within a dataset
+-- Input: :dataset_id, :column_id (optional — if omitted, run across all numeric columns in dataset)
+-- We'll use the IQR method per column: mark is_outlier = 1 for values outside [Q1 - 1.5*IQR, Q3 + 1.5*IQR]
+
+-- Helper: compute quartiles per column (SQLite approach using percentile is limited; this is a guideline SQL for engines that support window functions)
+-- Per-column outlier marking (Postgres / SQLite >= 3.25 with window functions may need custom implementation).
+
+-- Example using window functions (Postgres-style). If your DB is SQLite and lacks percentile_disc, perform calculation in application layer.
+WITH numeric_cells AS (
+  SELECT ce.id, ce.column_id, ce.numeric_value
+  FROM cells ce
+  WHERE ce.dataset_id = :dataset_id
+    AND ce.numeric_value IS NOT NULL
+    AND (:column_id IS NULL OR ce.column_id = :column_id)
+), stats AS (
+  SELECT column_id,
+         percentile_cont(0.25) WITHIN GROUP (ORDER BY numeric_value) AS q1,
+         percentile_cont(0.75) WITHIN GROUP (ORDER BY numeric_value) AS q3
+  FROM numeric_cells
+  GROUP BY column_id
+)
+UPDATE cells
+SET is_outlier = 1
+FROM stats s
+WHERE cells.column_id = s.column_id
+  AND cells.dataset_id = :dataset_id
+  AND cells.numeric_value IS NOT NULL
+  AND (cells.numeric_value < (s.q1 - 1.5 * (s.q3 - s.q1)) OR cells.numeric_value > (s.q3 + 1.5 * (s.q3 - s.q1)));
+
+-- If the above window/percentile functions are not available, recommend computing Q1/Q3 in application and then running a parameterized update:
+-- UPDATE cells SET is_outlier = 1 WHERE dataset_id = :dataset_id AND column_id = :column_id AND (numeric_value < :lower_bound OR numeric_value > :upper_bound);
+
+-- 8. Example: change a single cell value (and optionally update numeric_value and is_outlier)
+-- Inputs: :cell_id, :new_value
+UPDATE cells
+SET value = :new_value,
+    numeric_value = (CASE WHEN trim(:new_value) = '' THEN NULL WHEN :new_value GLOB '-?[0-9]*' THEN CAST(:new_value AS REAL) ELSE NULL END),
+    is_outlier = 0 -- reset; re-run outlier detection if needed
+WHERE id = :cell_id;
+
+-- 9. Change an entire column's values (example: fill nulls, apply transformation)
+-- Inputs: :column_id, :dataset_id, :expression (example usage shown below)
+-- Example: set empty/null values to a default string
+UPDATE cells
+SET value = COALESCE(value, '')
+WHERE column_id = :column_id
+  AND dataset_id = :dataset_id
+  AND (value IS NULL OR TRIM(value) = '');
+
+-- Example: apply numeric transformation (multiply numeric_value by 100)
+UPDATE cells
+SET numeric_value = numeric_value * 100,
+    value = CAST(numeric_value * 100 AS TEXT)
+WHERE column_id = :column_id
+  AND dataset_id = :dataset_id
+  AND numeric_value IS NOT NULL;
+
+-- 10. Generate a report from the script (example: dataset summary report using cells)
+-- Input: :dataset_id
+SELECT d.id AS dataset_id,
+       d.name AS dataset_name,
+       p.name AS project_name,
+       (SELECT COUNT(*) FROM columns WHERE dataset_id = d.id) AS column_count,
+       (SELECT COUNT(*) FROM cells WHERE dataset_id = d.id) AS cell_count,
+       (SELECT COUNT(*) FROM cells WHERE dataset_id = d.id AND (value IS NULL OR TRIM(value) = '')) AS empty_or_null_cells,
+       (SELECT ROUND((COUNT(*) * 100.0) / NULLIF((SELECT COUNT(*) FROM cells WHERE dataset_id = d.id),0),2) FROM cells WHERE dataset_id = d.id AND (value IS NULL OR TRIM(value) = '')) AS empty_or_null_percentage,
+       (SELECT COUNT(DISTINCT column_id) FROM cells WHERE dataset_id = d.id AND numeric_value IS NOT NULL) AS numeric_column_count,
+       (SELECT COUNT(*) FROM cells WHERE dataset_id = d.id AND is_outlier = 1) AS outlier_count
+FROM datasets d
+LEFT JOIN projects p ON d.project_id = p.id
+WHERE d.id = :dataset_id;
+
+-- Notes and recommended application integration:
+-- - Use `datasheet.dart` and `sqflite_service.dart` to implement parsing of cell values into `numeric_value` and to compute quartiles and outlier bounds when the SQL engine lacks window/percentile functions.
+-- - Prefer marking `numeric_value` and `is_outlier` from application code (faster to iterate rows and apply robust parsing/locales).
+-- - Add indexes on cells(dataset_id), cells(column_id), columns(dataset_id) to speed queries.
+-- - If you need audit/history for changes, create a `cell_history` table and write changes there instead of in-place UPDATEs.
+
+-- End of script
