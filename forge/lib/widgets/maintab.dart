@@ -23,6 +23,7 @@ class _MaintabState extends State<Maintab> {
     }
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     
     return IndexedStack(
       index: widget.selected,
@@ -36,6 +37,8 @@ class _MaintabState extends State<Maintab> {
         const Center(child: Text('Settings Content')),
       ],
 =======
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 
@@ -54,6 +57,9 @@ class _MaintabState extends State<Maintab> {
         ],
       ),
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes

@@ -103,6 +103,9 @@ class Dataset {
     this.projectId,
   });
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
@@ -120,6 +123,9 @@ class Algorithm {
   final String
   parameters; // Store as a JSON string or comma-separated values for sqflite
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
@@ -131,8 +137,11 @@ class Algorithm {
     required this.parameters,
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     required this.code,
     required this.projectId,
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 =======
@@ -162,6 +171,7 @@ class Algorithm {
   }
 }
 
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 class Project {
@@ -320,6 +330,8 @@ Future onCreate (Database db, int version) async {
 =======
 =======
 >>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
 // Log: timestamp as id, algorithm id (nullable), result, line number
 class LogEntry {
   final int id; // epoch millis timestamp
@@ -403,6 +415,9 @@ class CellEntry {
       );
 }
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes

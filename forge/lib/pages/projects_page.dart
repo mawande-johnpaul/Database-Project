@@ -11,6 +11,9 @@ import 'package:forge/widgets/tr_button.dart';
 =======
 // import 'package:get/utils.dart';
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
@@ -29,7 +32,10 @@ class DatasetScope extends StatefulWidget {
   const DatasetScope({super.key, required this.child});
   final Widget child;
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 =======
+=======
+>>>>>>> Stashed changes
 
   static DatasetScopeState? of(BuildContext context) =>
       context.findAncestorStateOfType<DatasetScopeState>();
@@ -411,6 +417,7 @@ class _ProjectsPageState extends State<ProjectsPage> {
 
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
                     final dbDir = Directory('${projectDir.path}/db');
                     await dbDir.create();
 
@@ -434,6 +441,8 @@ class _ProjectsPageState extends State<ProjectsPage> {
                 }
               },
 =======
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
                                   // Set dataset in shared scope so other pages can access it
