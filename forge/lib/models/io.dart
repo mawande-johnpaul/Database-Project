@@ -1,33 +1,55 @@
-import 'dart:convert';
 import 'dart:io';
-import 'package:path_provider/path_provider.dart';
 
-Future<String> get _localPath async {
-  final directory = await getApplicationDocumentsDirectory();
-  return directory.path;
+import 'package:forge/models/datasheet.dart';
+
+import 'sqflite_service.dart';
+
+// Use Sqflite for all data operations
+Future<List<Map<String, dynamic>>> getProjects() async {
+  return await SqfliteService.getProjects();
 }
 
-Future<File> _getLocalFile() async {
-  final path = await _localPath;
-  return File('$path/appfile.json');
+Future<Project?> getProject(int id) async {
+  return await SqfliteService.getProject(id);
 }
 
-Future<void> writeJsonToFile(Map<String, dynamic> data) async {
-  final file = await _getLocalFile();
-  await file.writeAsString(jsonEncode(data));
+Future<void> createProject(Project project) async {
+  await SqfliteService.createProject(project);
 }
 
-Future<Map<String, dynamic>> readJsonFromFile() async {
+Future<int> createDataset(Dataset dataset, String filePath) async {
+  // Save the dataset with file path
+  return await SqfliteService.createDataset(dataset, filePath);
+}
+
+Future<List<Dataset>> getDatasetsByProject(int projectId) async {
+  return await SqfliteService.getDatasetsByProject(projectId);
+}
+
+// Add similar wrappers for users, datasheets, etc.
+
+Future<List<String>> getDataset(Future<String?> pathFuture) async {
+  // Wait for the path future to resolve
+  final path = await pathFuture;
+  
+  // Check if path is null (user canceled file picking)
+  if (path == null) {
+    return [];
+  }
+  
   try {
-    final file = await _getLocalFile();
-    final contents = await file.readAsString();
-    return jsonDecode(contents);
+    // Try to read with UTF-8 encoding first
+    return await File(path).readAsLines();
   } catch (e) {
-    return {'projects': []};
+    // If UTF-8 fails, try with Latin-1 (ISO-8859-1) encoding
+    try {
+      final bytes = await File(path).readAsBytes();
+      final content = String.fromCharCodes(bytes);
+      return content.split('\n').map((line) => line.trim()).toList();
+    } catch (e) {
+      // If all attempts fail, return empty list and log error
+      print('Error reading file: $e');
+      return [];
+    }
   }
 }
-
-dynamic getProjects(Map<String, dynamic> appData) {
-  return appData['projects'];
-}
-

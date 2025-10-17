@@ -1,9 +1,7 @@
 // ignore_for_file: library_prefixes, depend_on_referenced_packages
 
 import 'package:flutter/material.dart';
-import 'package:flutter_code_editor/flutter_code_editor.dart';
-import 'package:flutter_highlight/themes/a11y-dark.dart';
-import 'package:highlight/languages/python.dart' as pythonLang;
+// ...existing code...
 
 class Editor extends StatefulWidget {
   final String initialCode;
@@ -15,15 +13,12 @@ class Editor extends StatefulWidget {
 }
 
 class _EditorState extends State<Editor> {
-  late CodeController _controller;
+  late TextEditingController _controller;
 
   @override
   void initState() {
     super.initState();
-    _controller = CodeController(
-      text: widget.initialCode,
-      language: pythonLang.python,
-    );
+    _controller = TextEditingController(text: widget.initialCode);
   }
 
   @override
@@ -74,14 +69,16 @@ class _EditorState extends State<Editor> {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(20.0),
               ),
-              child: CodeTheme(
-                data: CodeThemeData(styles: a11yDarkTheme),
-                child: CodeField(
-                  controller: _controller,
-                  textStyle: const TextStyle(
-                    fontFamily: 'monospace',
-                    fontSize: 14,
-                  ),
+              child: TextField(
+                controller: _controller,
+                maxLines: null,
+                style: const TextStyle(
+                  fontFamily: 'monospace',
+                  fontSize: 14,
+                ),
+                decoration: InputDecoration(
+                  border: InputBorder.none,
+                  hintText: "Enter code here...",
                 ),
               ),
             ),
