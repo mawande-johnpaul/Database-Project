@@ -10,6 +10,9 @@ import 'package:forge/widgets/sec_button.dart';
 import 'package:forge/widgets/tr_button.dart';
 =======
 // import 'package:get/utils.dart';
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 
 class ProjectsPage extends StatefulWidget {
@@ -25,6 +28,51 @@ class ProjectsPage extends StatefulWidget {
 class DatasetScope extends StatefulWidget {
   const DatasetScope({super.key, required this.child});
   final Widget child;
+<<<<<<< Updated upstream
+=======
+
+  static DatasetScopeState? of(BuildContext context) =>
+      context.findAncestorStateOfType<DatasetScopeState>();
+
+  @override
+  DatasetScopeState createState() => DatasetScopeState();
+}
+
+class DatasetScopeState extends State<DatasetScope> {
+  Dataset? dataset;
+  Future<List<String>>? dataFile;
+
+  void setDataset(Dataset? ds, [Future<List<String>>? df]) {
+    setState(() {
+      dataset = ds;
+      dataFile = df;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+}
+
+class _ProjectsPageState extends State<ProjectsPage> {
+  @override
+  Widget build(BuildContext context) {
+    // Use FutureBuilder to handle the asynchronous data fetching
+    return FutureBuilder<List<Project>>(
+      future: getProjects().then((data) {
+        return data
+            .map(
+              (item) => Project(
+                id: item['id'],
+                name: item['name'],
+                description: item['description'],
+              ),
+            )
+            .toList();
+      }),
+      builder: (context, snapshot) {
+        List<Project> savedProjects = snapshot.data!;
+        DataPage page = DataPage(dataset: null, dataFile: null);
+>>>>>>> Stashed changes
 
   static DatasetScopeState? of(BuildContext context) =>
       context.findAncestorStateOfType<DatasetScopeState>();
@@ -362,6 +410,7 @@ class _ProjectsPageState extends State<ProjectsPage> {
                     await projectDir.create();
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
                     final dbDir = Directory('${projectDir.path}/db');
                     await dbDir.create();
 
@@ -385,6 +434,8 @@ class _ProjectsPageState extends State<ProjectsPage> {
                 }
               },
 =======
+=======
+>>>>>>> Stashed changes
                                   // Set dataset in shared scope so other pages can access it
                                   final scope = DatasetScope.of(context);
                                   if (scope != null) {

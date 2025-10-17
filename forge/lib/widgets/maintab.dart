@@ -22,6 +22,7 @@ class _MaintabState extends State<Maintab> {
       return const Center(child: Text('Loading...'));
     }
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     
     return IndexedStack(
       index: widget.selected,
@@ -35,6 +36,8 @@ class _MaintabState extends State<Maintab> {
         const Center(child: Text('Settings Content')),
       ],
 =======
+=======
+>>>>>>> Stashed changes
 
     // Wrap the main tab content in a DatasetScope so all tab pages can access
     // the currently selected dataset and its file without requiring explicit
@@ -50,6 +53,9 @@ class _MaintabState extends State<Maintab> {
           const Center(child: Text('Settings Content')),
         ],
       ),
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
     );
   }

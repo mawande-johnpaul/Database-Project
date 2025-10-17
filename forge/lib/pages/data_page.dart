@@ -6,6 +6,9 @@ import 'package:forge/models/io.dart';
 import 'package:forge/models/file_picker_service.dart';
 import 'package:forge/widgets/button.dart';
 import 'package:pluto_grid/pluto_grid.dart';
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 
 class DataPage extends StatefulWidget {
@@ -144,6 +147,9 @@ class _DataPageState extends State<DataPage> {
       }
     }
   }
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 
   @override
@@ -237,6 +243,9 @@ class _DataPageState extends State<DataPage> {
                 ),
               ],
             ),
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
       ),
     );
